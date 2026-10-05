@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Invoice #{{ bill.BillID }} | MediCare+ Clinic{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;" class="no-print">
+  <a class="btn btn-secondary btn-sm" href="{{ url_for('bills') }}">&larr; Back to Invoices</a>
+  <button class="btn btn-primary btn-sm" onclick="window.print()">&#128424; Print Receipt</button>
+</div>
+
+<div class="invoice-wrapper">
+  <!-- Invoice Header -->
+  <div class="invoice-header">
+    <div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <div class="brand-badge">+</div>
+        <span style="font-family:var(--font-heading); font-size:24px; font-weight:800; color:var(--navy-dark);">MediCare+ Clinic</span>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-muted); line-height:1.5;">
+        77 Health Boulevard, Central Healthcare Complex<br>
+        Phone: +91 90000 00000 &bull; GSTIN: 29AAAAA0000A1Z5<br>
+        Email: billing@medicare-clinic.com
+      </p>
+    </div>
+
+    <div class="invoice-meta">
+      <div class="page-eyebrow">OFFICIAL RECEIPT</div>
+      <h2 style="font-size:26px; color:var(--navy-dark);">INV-{{ bill.BillID }}</h2>
+      <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+        Date: <strong>{{ bill.AppointmentDate|clean_date }}</strong><br>
+        Status: <span class="badge badge-{{ bill.PaymentStatus|lower }}">{{ bill.PaymentStatus }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parties Info -->
+  <div class="invoice-parties">
+    <div>
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--teal); font-weight:700;">PATIENT DETAILS</span>
+      <h3 style="font-size:18px; margin-top:4px; color:var(--text-title);">{{ bill.PatientName }}</h3>
+      <p style="font-size:13px; color:var(--text-muted); line-height:1.6; margin-top:4px;">
+        Patient ID: #{{ bill.PatientID }}<br>
+        Phone: {{ bill.Phone }}<br>
+        {% if bill.Email %}Email: {{ bill.Email }}<br>{% endif %}
+        Address: {{ bill.Address or 'Clinic OPD Patient' }}
+      </p>
+    </div>
+
+    <div>
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--teal); font-weight:700;">CONSULTING PHYSICIAN</span>
+      <h3 style="font-size:18px; margin-top:4px; color:var(--text-title);">{{ bill.DoctorName }}</h3>
+      <p style="font-size:13px; color:var(--text-muted); line-height:1.6; margin-top:4px;">
+        Specialty: {{ bill.Specialization }}<br>
+        Department: {{ bill.DepartmentName }}<br>
+        Clinic Location: {{ bill.RoomNumber or 'Consultation Room' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Diagnosis / Clinical Note -->
+  {% if bill.Diagnosis or bill.Reason %}
+  <div style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; margin-bottom:24px; font-size:13px;">
+    <strong>Reason for Consultation:</strong> {{ bill.Reason or 'Clinical Review' }}
+    {% if bill.Diagnosis %}
+      <div style="margin-top:4px; color:var(--teal); font-weight:600;">
+        Clinical Diagnosis: {{ bill.Diagnosis }}
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Line Items Table -->
+  <table class="data-table" style="margin-bottom:20px;">
+    <thead>
+      <tr>
+        <th>Service Description</th>
+        <th>Department</th>
+        <th style="text-align:right;">Amount (INR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <strong>Specialist OPD Consultation &bull; Visit #{{ bill.AppointmentID }}</strong>
+          <div style="font-size:12px; color:var(--text-muted);">Attending: {{ bill.DoctorName }} ({{ bill.Specialization }})</div>
+        </td>
+        <td>{{ bill.DepartmentName }}</td>
+        <td style="text-align:right; font-weight:600;">₹{{ '%.2f'|format(bill.Amount) }}</td>
+      </tr>
+      {% if prescriptions %}
+        {% for rx in prescriptions %}
+        <tr>
+          <td>
+            <strong>Prescription &bull; {{ rx.Medicine }} ({{ rx.Dosage }})</strong>
+            <div style="font-size:12px; color:var(--text-muted);">Directions: {{ rx.Instructions }} &bull; Duration: {{ rx.Duration }}</div>
+          </td>
+          <td>Pharmacy</td>
+          <td style="text-align:right; font-weight:600;">Included</td>
+        </tr>
+        {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+
+  <!-- Invoice Totals -->
+  <div class="invoice-totals">
+    <div class="invoice-row">
+      <span>Subtotal</span>
+      <strong>₹{{ '%.2f'|format(bill.Amount) }}</strong>
+    </div>
+    <div class="invoice-row">
+      <span>CGST + SGST (5%)</span>
+      <span>₹{{ '%.2f'|format(bill.Tax or 0) }}</span>
+    </div>
+    <div class="invoice-row total">
+      <span>Grand Total</span>
+      <span>₹{{ '%.2f'|format(bill.TotalAmount or (bill.Amount + (bill.Tax or 0))) }}</span>
+    </div>
+    {% if bill.PaymentStatus == 'Paid' %}
+      <div style="text-align:center; margin-top:16px; padding:10px; background:#dcfce7; color:#166534; border-radius:var(--radius-sm); font-weight:700; font-size:13px;">
+        &#10003; PAID IN FULL VIA {{ bill.PaymentMethod|upper }}
+        {% if bill.PaidAt %}<div style="font-size:11px; font-weight:500;">On {{ bill.PaidAt }}</div>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Signoff -->
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:50px; padding-top:20px; border-top:1px solid var(--border-subtle); font-size:12px; color:var(--text-muted);">
+    <div>
+      <em>Thank you for trusting MediCare+ with your healthcare.</em><br>
+      Computer generated electronic invoice, valid without physical signature.
+    </div>
+    <div style="text-align:right;">
+      <div style="width:160px; border-bottom:1px solid #94a3b8; margin-bottom:6px;"></div>
+      Authorized Hospital Signatory
+    </div>
+  </div>
+</div>
+{% endblock %}

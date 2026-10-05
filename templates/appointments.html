@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Appointments | MediCare+ Clinic Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">CLINICAL SCHEDULE</div>
+    <h1 class="page-title">Appointment Management</h1>
+    <p class="page-desc">Track scheduled consultations, update clinical progress, and issue prescriptions.</p>
+  </div>
+  {% if session.get('role') == 'patient' %}
+    <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book New Consultation</a>
+  {% endif %}
+</div>
+
+<!-- Filter Tabs & Search Bar -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="{{ url_for('appointments') }}" class="btn btn-sm {{ 'btn-primary' if not active_filter else 'btn-secondary' }}">All Visits</a>
+    <a href="{{ url_for('appointments', status='Scheduled') }}" class="btn btn-sm {{ 'btn-primary' if active_filter == 'Scheduled' else 'btn-secondary' }}">Scheduled</a>
+    <a href="{{ url_for('appointments', status='Confirmed') }}" class="btn btn-sm {{ 'btn-primary' if active_filter == 'Confirmed' else 'btn-secondary' }}">Confirmed</a>
+    <a href="{{ url_for('appointments', status='Completed') }}" class="btn btn-sm {{ 'btn-primary' if active_filter == 'Completed' else 'btn-secondary' }}">Completed</a>
+    <a href="{{ url_for('appointments', status='Cancelled') }}" class="btn btn-sm {{ 'btn-primary' if active_filter == 'Cancelled' else 'btn-secondary' }}">Cancelled</a>
+  </div>
+
+  <div style="min-width:240px;">
+    <input type="text" id="tableSearchInput" class="form-control" placeholder="Search visits, patient, doctor...">
+  </div>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Patient</th>
+          <th>Doctor & Dept</th>
+          <th>Date & Time</th>
+          <th>Symptoms / Reason</th>
+          <th>Status</th>
+          <th>Bill Status (Click to Open)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td><strong style="color:var(--primary);">#{{ a.AppointmentID }}</strong></td>
+          <td>
+            <strong>{{ a.PatientName }}</strong>
+            {% if a.PatientPhone %}
+              <div style="font-size:11.5px; color:var(--text-muted);">&#128222; {{ a.PatientPhone }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <div>{{ a.DoctorName }}</div>
+            <span class="badge" style="background:#f1f5f9; color:var(--text-body); font-size:10.5px;">{{ a.DepartmentName }}</span>
+          </td>
+          <td>
+            <strong>{{ a.AppointmentDate|clean_date }}</strong>
+          </td>
+          <td>
+            <div>{{ a.Reason or 'Consultation' }}</div>
+            {% if a.Symptoms %}
+              <small style="color:var(--text-muted); display:block;">Symptoms: {{ a.Symptoms }}</small>
+            {% endif %}
+            {% if a.Diagnosis %}
+              <small style="color:var(--teal); font-weight:600; display:block;">Diagnosis: {{ a.Diagnosis }}</small>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{{ a.Status|lower }}">{{ a.Status }}</span>
+          </td>
+
+          <!-- Clickable Bill Status (Screenshots 3 & 4 Fix) -->
+          <td>
+            {% if a.BillID %}
+              <a href="{{ url_for('invoice', bill_id=a.BillID) }}" class="badge badge-{{ a.PaymentStatus|lower }}" title="Click to view & print invoice" style="text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                {{ a.PaymentStatus }} (₹{{ '%.2f'|format(a.TotalAmount or 0) }}) &#8599;
+              </a>
+            {% else %}
+              <span class="badge" style="background:#f1f5f9; color:var(--text-muted);">Unbilled</span>
+            {% endif %}
+          </td>
+
+          <!-- Actions Column for All Roles -->
+          <td>
+            {% if session.get('role') in ('doctor', 'admin') %}
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <!-- Quick status update form -->
+                <form method="post" action="{{ url_for('update_appointment_status', appointment_id=a.AppointmentID) }}" style="display:flex; gap:6px;">
+                  <select name="status" class="form-control" style="padding:4px 8px; font-size:12px; width:auto;">
+                    <option value="Scheduled" {{ 'selected' if a.Status == 'Scheduled' }}>Scheduled</option>
+                    <option value="Confirmed" {{ 'selected' if a.Status == 'Confirmed' }}>Confirmed</option>
+                    <option value="Completed" {{ 'selected' if a.Status == 'Completed' }}>Completed</option>
+                    <option value="Cancelled" {{ 'selected' if a.Status == 'Cancelled' }}>Cancelled</option>
+                  </select>
+                  <button type="submit" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:12px;">Save</button>
+                </form>
+
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  {% if session.get('role') == 'doctor' %}
+                    <button type="button" class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:12px;" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='flex'">
+                      + Prescribe
+                    </button>
+                  {% endif %}
+
+                  {% if a.BillID %}
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for('invoice', bill_id=a.BillID) }}" style="padding:4px 8px; font-size:12px;">
+                      Invoice &#8599;
+                    </a>
+                  {% endif %}
+                </div>
+
+                {% if session.get('role') == 'doctor' %}
+                  <!-- Prescription Modal -->
+                  <div id="rx-modal-{{ a.AppointmentID }}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
+                    <div class="auth-card" style="max-width:500px; text-align:left;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h3 style="font-size:18px;">Prescribe for Visit #{{ a.AppointmentID }}</h3>
+                        <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='none'">&times;</button>
+                      </div>
+
+                      <form method="post" action="{{ url_for('add_prescription', appointment_id=a.AppointmentID) }}">
+                        <div class="form-group">
+                          <label class="form-label">Clinical Diagnosis</label>
+                          <input class="form-control" type="text" name="diagnosis" value="{{ a.Diagnosis or '' }}" placeholder="e.g. Acute Bronchitis" required>
+                        </div>
+
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label">Medicine Name *</label>
+                            <input class="form-control" type="text" name="medicine" placeholder="e.g. Amoxicillin" required>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label">Dosage *</label>
+                            <input class="form-control" type="text" name="dosage" placeholder="e.g. 500 mg" required>
+                          </div>
+                        </div>
+
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label">Duration *</label>
+                            <input class="form-control" type="text" name="duration" placeholder="e.g. 5 days" required>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label">Instructions</label>
+                            <input class="form-control" type="text" name="instructions" value="Take after meals" placeholder="e.g. Twice daily after meals">
+                          </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-top:16px;">
+                          <button type="submit" class="btn btn-primary btn-block">Save & Issue Rx</button>
+                          <button type="button" class="btn btn-secondary" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='none'">Cancel</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+
+            {% else %}
+              <!-- Patient Actions -->
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                {% if a.BillID %}
+                  <a class="btn btn-sm btn-outline" href="{{ url_for('invoice', bill_id=a.BillID) }}" style="padding:4px 10px; font-size:12px;">
+                    View Invoice &#8599;
+                  </a>
+                {% endif %}
+                {% if a.Status == 'Completed' %}
+                  <a class="btn btn-sm btn-secondary" href="{{ url_for('prescriptions') }}" style="padding:4px 10px; font-size:12px;">
+                    View Rx
+                  </a>
+                {% endif %}
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center; padding:32px; color:var(--text-muted);">
+            No appointment records found matching your selection.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

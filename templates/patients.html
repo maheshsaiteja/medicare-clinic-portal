@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Patients Directory | MediCare+ Clinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">DEMOGRAPHICS & MEDICAL REGISTRY</div>
+    <h1 class="page-title">Patient Directory</h1>
+    <p class="page-desc">Complete medical profiles, blood groups, and consultation history of registered clinic patients.</p>
+  </div>
+  {% if session.get('role') == 'admin' %}
+    <a class="btn btn-primary" href="{{ url_for('register') }}">+ Register New Patient</a>
+  {% endif %}
+</div>
+
+<!-- Search Panel -->
+<div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+  <form method="get" action="{{ url_for('patients') }}" style="display:flex; gap:10px; width:100%; max-width:480px;">
+    <input type="text" name="q" value="{{ search_query or '' }}" class="form-control" placeholder="Search by patient name, phone, or blood group (e.g. B+)...">
+    <button type="submit" class="btn btn-secondary btn-sm" style="white-space:nowrap;">Search</button>
+    {% if search_query %}
+      <a href="{{ url_for('patients') }}" class="btn btn-outline btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Patient ID</th>
+          <th>Full Name</th>
+          <th>Blood Group</th>
+          <th>Gender</th>
+          <th>DOB</th>
+          <th>Contact Number</th>
+          <th>Email Address</th>
+          <th>Residential Address</th>
+          {% if session.get('role') != 'patient' %}
+            <th>Total Visits</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        <tr>
+          <td><strong style="color:var(--primary);">#{{ p.PatientID }}</strong></td>
+          <td>
+            <strong>{{ p.PatientName }}</strong>
+          </td>
+          <td>
+            {% if p.BloodGroup %}
+              <span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:800;">{{ p.BloodGroup }}</span>
+            {% else %}
+              <span style="color:var(--text-muted);">&mdash;</span>
+            {% endif %}
+          </td>
+          <td>{{ p.Gender }}</td>
+          <td>{{ p.DOB }}</td>
+          <td><strong>&#128222; {{ p.Phone }}</strong></td>
+          <td>{{ p.Email or '&mdash;' }}</td>
+          <td style="max-width:200px; white-space:normal; font-size:12.5px;">{{ p.Address or 'Not recorded' }}</td>
+          {% if session.get('role') != 'patient' %}
+            <td>
+              <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">
+                {{ p.VisitCount or 0 }} visit(s)
+              </span>
+            </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">
+            No patient records matched your search query.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

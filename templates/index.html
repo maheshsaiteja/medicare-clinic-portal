@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}MediCare+ | Modern Clinic Management & Healthcare Portal{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+  <div class="hero-content">
+    <div class="page-eyebrow">CLINICAL EXCELLENCE &bull; COMPASSIONATE CARE</div>
+    <h1>Modern healthcare,<br><span class="highlight">seamless care.</span></h1>
+    <p class="hero-lead">
+      MediCare+ connects patients with certified clinical specialists, digital appointments, electronic prescriptions, and transparent instant billing.
+    </p>
+
+    <div class="hero-actions">
+      {% if session.get('user_id') %}
+        <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to Workspace &rarr;</a>
+        <a class="btn btn-secondary" href="{{ url_for('appointments') }}">My Consultations</a>
+      {% else %}
+        <a class="btn btn-primary" href="{{ url_for('login') }}">Access Clinic Portal &rarr;</a>
+        <a class="btn btn-secondary" href="{{ url_for('register') }}">Patient Registration</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Medical Clinic Quick Info Card (Replaces the DBMS architecture box) -->
+  <div class="hero-card-banner">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+      <div>
+        <span style="font-size:11.5px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">HOSPITAL OPD & CLINIC SERVICES</span>
+        <h3 style="margin-top:4px;">Emergency & OPD Care</h3>
+      </div>
+      <div style="background:#0284c7; width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px;">+</div>
+    </div>
+    <p>
+      Multi-specialty outpatient consultations, on-site diagnostics, digital pharmacy, and emergency medical triage available 6 days a week.
+    </p>
+
+    <div class="sql-features-list" style="margin-top:20px; padding-top:16px;">
+      <div class="sql-badge">&#128337; <strong>OPD Hours:</strong> Mon &ndash; Sat, 8:00 AM &ndash; 8:00 PM</div>
+      <div class="sql-badge">&#128222; <strong>24/7 Helpline:</strong> +91 90000 00001</div>
+      <div class="sql-badge">&#128138; <strong>Digital Pharmacy:</strong> Instant prescription orders</div>
+      <div class="sql-badge">&#127973; <strong>Specialties:</strong> Cardiology, Dermatology, Pediatrics, General Medicine</div>
+    </div>
+
+    <div style="margin-top:22px;">
+      {% if session.get('role') == 'patient' %}
+        <a class="btn btn-primary btn-block" href="{{ url_for('new_appointment') }}">Book Doctor Consultation &rarr;</a>
+      {% else %}
+        <a class="btn btn-primary btn-block" href="{{ url_for('login') }}">Schedule Appointment &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Clickable Stats Grid (Screenshot 8 Fix) -->
+<div class="stats-grid">
+  <a href="{{ url_for('patients') if session.get('user_id') else url_for('login') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Patients Directory">
+    <div class="stat-info">
+      <span>Total Patients</span>
+      <b>{{ stats.patients }}</b>
+      <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">View Directory &rarr;</small>
+    </div>
+    <div class="stat-icon">&#128101;</div>
+  </a>
+
+  <a href="{{ url_for('doctors') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Specialists Team">
+    <div class="stat-info">
+      <span>Active Specialists</span>
+      <b>{{ stats.doctors }}</b>
+      <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">View Doctors &rarr;</small>
+    </div>
+    <div class="stat-icon">&#9877;&#65039;</div>
+  </a>
+
+  <a href="{{ url_for('appointments') if session.get('user_id') else url_for('login') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Consultations">
+    <div class="stat-info">
+      <span>Consultations</span>
+      <b>{{ stats.appointments }}</b>
+      <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">View Schedule &rarr;</small>
+    </div>
+    <div class="stat-icon">&#128197;</div>
+  </a>
+
+  <a href="{{ url_for('doctors') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Medical Specialties">
+    <div class="stat-info">
+      <span>Medical Specialties</span>
+      <b>{{ stats.departments }}</b>
+      <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">Explore Departments &rarr;</small>
+    </div>
+    <div class="stat-icon">&#127973;</div>
+  </a>
+</div>
+
+<!-- Featured Doctors Section -->
+{% if featured_doctors %}
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="page-eyebrow">OUR SPECIALISTS</div>
+      <h2 class="panel-title">Available Doctors & Consultants</h2>
+    </div>
+    <a class="btn btn-outline btn-sm" href="{{ url_for('doctors') }}">View All Specialists &rarr;</a>
+  </div>
+
+  <div class="cards-grid">
+    {% for doc in featured_doctors %}
+    <div class="doctor-card">
+      <div>
+        <div class="doc-avatar">DR</div>
+        <h3 class="doc-name">{{ doc.DoctorName }}</h3>
+        <div class="doc-specialty">{{ doc.Specialization }} &bull; {{ doc.DepartmentName }}</div>
+        <div class="doc-details">
+          <div><strong>Consultation Fee:</strong> ₹{{ '%.2f'|format(doc.ConsultationFee) }}</div>
+          <div><strong>Clinic Location:</strong> {{ doc.RoomNumber }}</div>
+        </div>
+      </div>
+      <div style="margin-top: 18px;">
+        {% if session.get('role') == 'patient' %}
+          <a class="btn btn-primary btn-sm btn-block" href="{{ url_for('new_appointment') }}">Book Consultation</a>
+        {% else %}
+          <a class="btn btn-secondary btn-sm btn-block" href="{{ url_for('login') }}">Sign In to Book</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Key Platform Modules -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+  <div class="panel" style="margin-bottom:0;">
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--primary);">&#128100; Patient Portal</h3>
+    <p style="font-size:14px; color:var(--text-muted);">
+      Patients can self-register, book appointments with their preferred doctors, view electronic prescriptions, and pay bills online.
+    </p>
+  </div>
+  <div class="panel" style="margin-bottom:0;">
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--teal);">&#9877;&#65039; Doctor Console</h3>
+    <p style="font-size:14px; color:var(--text-muted);">
+      Doctors can review assigned daily consultations, record medical diagnoses, and issue medication prescriptions with specific dosages.
+    </p>
+  </div>
+  <div class="panel" style="margin-bottom:0;">
+    <h3 style="font-size:18px; margin-bottom:8px; color:#6366f1;">&#128202; Executive Administration</h3>
+    <p style="font-size:14px; color:var(--text-muted);">
+      Clinic administrators track hospital revenue across departments, monitor doctor caseloads, and inspect billing receivables.
+    </p>
+  </div>
+</div>
+{% endblock %}

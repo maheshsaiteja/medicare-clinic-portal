@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Prescriptions & Pharmacy | MediCare+ Clinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">DIGITAL PHARMACY & TREATMENTS</div>
+    <h1 class="page-title">Prescriptions & Medical Orders</h1>
+    <p class="page-desc">Authentic clinical prescriptions issued by licensed clinic physicians.</p>
+  </div>
+  {% if session.get('role') == 'doctor' %}
+    <a class="btn btn-primary" href="{{ url_for('appointments') }}">+ Prescribe via Appointments</a>
+  {% endif %}
+</div>
+
+<div class="panel">
+  {% for pr in prescriptions %}
+  <div class="prescription-card">
+    <div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+        <span class="badge" style="background:#ccfbf1; color:#0f766e; font-weight:800;">Rx #{{ pr.PrescriptionID }}</span>
+        <span style="font-size:12.5px; color:var(--text-muted);">&bull; Visit #{{ pr.AppointmentID }} ({{ pr.AppointmentDate|clean_date }})</span>
+      </div>
+      <div class="rx-med-name">&#128138; {{ pr.Medicine }}</div>
+      <div class="rx-instructions">
+        <strong>Directions:</strong> {{ pr.Instructions or 'Take as prescribed' }}
+      </div>
+      {% if pr.Diagnosis %}
+        <div style="margin-top:6px; font-size:12.5px; color:var(--teal); font-weight:600;">
+          Clinical Diagnosis: {{ pr.Diagnosis }}
+        </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <span style="font-size:11.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block;">Dosage & Period</span>
+      <div style="font-size:16px; font-weight:700; color:var(--text-title); margin-top:2px;">{{ pr.Dosage }}</div>
+      <span class="badge" style="background:#f1f5f9; color:var(--text-body); margin-top:4px;">{{ pr.Duration }}</span>
+    </div>
+
+    <!-- Right Side: Both Patient & Doctor Clearly Displayed (Screenshot 7 Fix) -->
+    <div style="text-align:right; border-left:1px solid var(--border-subtle); padding-left:16px;">
+      <div style="margin-bottom:8px;">
+        <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); display:block;">Patient</span>
+        <strong style="color:var(--text-title); font-size:14.5px;">{{ pr.PatientName }}</strong>
+        {% if pr.PatientPhone %}
+          <div style="font-size:11.5px; color:var(--text-muted);">&#128222; {{ pr.PatientPhone }}</div>
+        {% endif %}
+      </div>
+
+      <div style="padding-top:6px; border-top:1px dashed var(--border);">
+        <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--teal); font-weight:700; display:block;">Prescribing Doctor</span>
+        <strong style="color:var(--text-title); font-size:14px;">{{ pr.DoctorName }}</strong>
+        <div style="font-size:11.5px; color:var(--text-muted);">{{ pr.Specialization }} ({{ pr.DepartmentName }})</div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div style="text-align:center; padding:40px; color:var(--text-muted);">
+    No active prescriptions found on record.
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

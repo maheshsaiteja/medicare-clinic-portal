@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Clinic Analytics & Reports | MediCare+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">BUSINESS INTELLIGENCE & SQL AGGREGATES</div>
+    <h1 class="page-title">Executive Clinical Analytics</h1>
+    <p class="page-desc">Real-time performance reports powered by relational SQL GROUP BY, HAVING, and Views.</p>
+  </div>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));">
+  <!-- Department Performance Panel -->
+  <div class="panel" style="margin-bottom:0;">
+    <div class="panel-header">
+      <h2 class="panel-title">Department Revenue & Load</h2>
+      <span class="badge" style="background:#e0f2fe; color:#0369a1;">v_billing_summary</span>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Staff</th>
+            <th>Bookings</th>
+            <th style="text-align:right;">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in departments %}
+          <tr>
+            <td><strong>{{ d.DepartmentName }}</strong></td>
+            <td>{{ d.DoctorCount }} Dr(s)</td>
+            <td>{{ d.TotalBookings }}</td>
+            <td style="text-align:right; font-weight:700; color:var(--text-title);">₹{{ '%.2f'|format(d.Revenue) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Doctors Panel -->
+  <div class="panel" style="margin-bottom:0;">
+    <div class="panel-header">
+      <h2 class="panel-title">Top Specialists by Volume</h2>
+      <span class="badge" style="background:#ccfbf1; color:#0f766e;">v_doctor_schedules</span>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Physician</th>
+            <th>Department</th>
+            <th>Patients</th>
+            <th style="text-align:right;">Realized</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in top_doctors %}
+          <tr>
+            <td><strong>{{ doc.DoctorName }}</strong></td>
+            <td><small>{{ doc.DepartmentName }}</small></td>
+            <td>
+              <span class="badge" style="background:#e0f2fe; color:#0369a1;">{{ doc.PatientCount }} visits</span>
+            </td>
+            <td style="text-align:right; font-weight:700; color:#059669;">₹{{ '%.2f'|format(doc.RevenueEarned) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); margin-top:28px;">
+  <!-- Payment Method Breakdown -->
+  <div class="panel" style="margin-bottom:0;">
+    <div class="panel-header">
+      <h2 class="panel-title">Collections by Payment Mode</h2>
+      <span class="badge" style="background:#fef3c7; color:#92400e;">Aggregates</span>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Payment Channel</th>
+            <th>Transactions</th>
+            <th style="text-align:right;">Total Collected</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pm in payments %}
+          <tr>
+            <td><strong>{{ pm.PaymentMethod }}</strong></td>
+            <td>{{ pm.Count }} settlement(s)</td>
+            <td style="text-align:right; font-weight:700; color:var(--text-title);">₹{{ '%.2f'|format(pm.Total) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="text-align:center; color:var(--text-muted);">No payment settlements recorded yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Appointment Distribution -->
+  <div class="panel" style="margin-bottom:0;">
+    <div class="panel-header">
+      <h2 class="panel-title">Consultation Status Breakdown</h2>
+      <span class="badge" style="background:#f1f5f9; color:var(--text-body);">Workflow</span>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Total Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for st in status_counts %}
+          <tr>
+            <td>
+              <span class="badge badge-{{ st.Status|lower }}">{{ st.Status }}</span>
+            </td>
+            <td><strong>{{ st.count }}</strong> appointments</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

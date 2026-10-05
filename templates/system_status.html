@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Database Diagnostics | MediCare+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">SYSTEM & DATABASE HEALTH</div>
+    <h1 class="page-title">Relational Engine Diagnostics</h1>
+    <p class="page-desc">Overview of active database connection, table row counts, and schema verification.</p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Active Database Connection</h2>
+    {% if db_config and db_config.is_aiven %}
+      <span class="badge" style="background:#ffefe5; color:#ea580c; border:1px solid #fdba74; font-weight:600;">Aiven Managed MySQL</span>
+    {% elif db_config and db_config.is_cloud %}
+      <span class="badge" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; font-weight:600;">Cloud Database</span>
+    {% else %}
+      <span class="badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-weight:600;">Local Instance</span>
+    {% endif %}
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:12px;">
+    <div style="background:var(--bg-subtle, #f8fafc); padding:12px; border-radius:8px; border:1px solid var(--border-color, #e2e8f0);">
+      <div style="font-size:12px; color:var(--text-muted, #64748b); text-transform:uppercase; letter-spacing:0.5px;">Active Engine</div>
+      <div style="font-size:15px; font-weight:600; color:var(--text-main, #0f172a); margin-top:4px;">{{ db_engine }}</div>
+    </div>
+    <div style="background:var(--bg-subtle, #f8fafc); padding:12px; border-radius:8px; border:1px solid var(--border-color, #e2e8f0);">
+      <div style="font-size:12px; color:var(--text-muted, #64748b); text-transform:uppercase; letter-spacing:0.5px;">Host / Endpoint</div>
+      <div style="font-size:15px; font-weight:600; color:var(--text-main, #0f172a); margin-top:4px;">{{ db_config.host if db_config else 'localhost' }}:{{ db_config.port if db_config else 3306 }}</div>
+    </div>
+    <div style="background:var(--bg-subtle, #f8fafc); padding:12px; border-radius:8px; border:1px solid var(--border-color, #e2e8f0);">
+      <div style="font-size:12px; color:var(--text-muted, #64748b); text-transform:uppercase; letter-spacing:0.5px;">Database Name</div>
+      <div style="font-size:15px; font-weight:600; color:var(--text-main, #0f172a); margin-top:4px;">{{ db_config.database if db_config else 'clinic_management' }}</div>
+    </div>
+    <div style="background:var(--bg-subtle, #f8fafc); padding:12px; border-radius:8px; border:1px solid var(--border-color, #e2e8f0);">
+      <div style="font-size:12px; color:var(--text-muted, #64748b); text-transform:uppercase; letter-spacing:0.5px;">Security / SSL</div>
+      <div style="font-size:15px; font-weight:600; color:#16a34a; margin-top:4px;">
+        {% if is_mysql %}
+          TLS / SSL Active
+        {% else %}
+          Local File I/O
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Table Row Counts</h2>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Table Name</th>
+          <th>Entity Description</th>
+          <th style="text-align:right;">Total Records</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tbl, count in counts.items() %}
+        <tr>
+          <td><strong style="color:var(--primary);">{{ tbl }}</strong></td>
+          <td>
+            {% if tbl == 'users' %}User authentication and role logins
+            {% elif tbl == 'department' %}Clinical specialties and hospital departments
+            {% elif tbl == 'patient' %}Patient medical demographics and blood groups
+            {% elif tbl == 'doctor' %}Medical doctors, specializations, and room locations
+            {% elif tbl == 'appointment' %}Consultation bookings, symptoms, and visit status
+            {% elif tbl == 'prescription' %}Issued medications, dosages, and durations
+            {% elif tbl == 'bill' %}Financial invoices, tax calculations, and payments
+            {% endif %}
+          </td>
+          <td style="text-align:right;"><strong>{{ count }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

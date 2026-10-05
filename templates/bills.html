@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Billing & Invoices | MediCare+ Clinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">FINANCIAL LEDGER & BILLING</div>
+    <h1 class="page-title">Patient Invoices & Payment Status</h1>
+    <p class="page-desc">Track consultation invoices, GST breakdown, and settlement receipts.</p>
+  </div>
+</div>
+
+<!-- Status Filter Tabs -->
+<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+  <a href="{{ url_for('bills') }}" class="btn btn-sm {{ 'btn-primary' if not active_status else 'btn-secondary' }}">All Invoices</a>
+  <a href="{{ url_for('bills', status='Paid') }}" class="btn btn-sm {{ 'btn-primary' if active_status == 'Paid' else 'btn-secondary' }}">Settled (Paid)</a>
+  <a href="{{ url_for('bills', status='Pending') }}" class="btn btn-sm {{ 'btn-primary' if active_status == 'Pending' else 'btn-secondary' }}">Outstanding (Pending)</a>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          {% if session.get('role') != 'patient' %}
+            <th>Patient Name</th>
+          {% endif %}
+          <th>Specialist & Dept</th>
+          <th>Consultation Date</th>
+          <th>Base Fee</th>
+          <th>Tax (5% GST)</th>
+          <th>Total Payable</th>
+          <th>Status</th>
+          <th>Settlement Mode</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bills %}
+        <tr>
+          <td><strong style="color:var(--primary);">INV-{{ b.BillID }}</strong></td>
+          {% if session.get('role') != 'patient' %}
+            <td>
+              <strong>{{ b.PatientName }}</strong>
+              <div style="font-size:11.5px; color:var(--text-muted);">&#128222; {{ b.Phone }}</div>
+            </td>
+          {% endif %}
+          <td>
+            <div>{{ b.DoctorName }}</div>
+            <span class="badge" style="background:#f1f5f9; color:var(--text-body); font-size:10.5px;">{{ b.DepartmentName }}</span>
+          </td>
+          <td>{{ b.AppointmentDate|clean_date }}</td>
+          <td>₹{{ '%.2f'|format(b.Amount) }}</td>
+          <td>₹{{ '%.2f'|format(b.Tax or 0) }}</td>
+          <td><strong style="font-size:15px; color:var(--text-title);">₹{{ '%.2f'|format(b.TotalAmount or (b.Amount + (b.Tax or 0))) }}</strong></td>
+          <td>
+            <span class="badge badge-{{ b.PaymentStatus|lower }}">{{ b.PaymentStatus }}</span>
+          </td>
+          <td>
+            {% if b.PaymentStatus == 'Paid' %}
+              <span class="badge" style="background:#dcfce7; color:#166534;">&#10003; {{ b.PaymentMethod or 'Settled' }}</span>
+            {% else %}
+              <span style="color:var(--text-muted); font-size:12px;">Unpaid</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <a class="btn btn-outline btn-sm" href="{{ url_for('invoice', bill_id=b.BillID) }}">
+                Receipt &rarr;
+              </a>
+
+              {% if b.PaymentStatus == 'Pending' %}
+                <!-- Pay Modal Trigger -->
+                <button type="button" class="btn btn-success btn-sm" onclick="document.getElementById('pay-modal-{{ b.BillID }}').style.display='flex'">
+                  Pay Now
+                </button>
+
+                <!-- Payment Modal -->
+                <div id="pay-modal-{{ b.BillID }}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
+                  <div class="auth-card" style="max-width:440px; text-align:left;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                      <h3 style="font-size:18px;">Settle Invoice INV-{{ b.BillID }}</h3>
+                      <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="document.getElementById('pay-modal-{{ b.BillID }}').style.display='none'">&times;</button>
+                    </div>
+
+                    <div style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; margin-bottom:18px;">
+                      <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span>Consultation:</span>
+                        <strong>{{ b.DoctorName }}</strong>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:var(--navy-dark); border-top:1px solid var(--border); padding-top:8px;">
+                        <span>Total Payable:</span>
+                        <span>₹{{ '%.2f'|format(b.TotalAmount or (b.Amount + (b.Tax or 0))) }}</span>
+                      </div>
+                    </div>
+
+                    <form method="post" action="{{ url_for('pay_bill', bill_id=b.BillID) }}">
+                      <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-control" required>
+                          <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
+                          <option value="Card">Debit / Credit Card</option>
+                          <option value="Cash">Cash at Desk</option>
+                          <option value="Insurance">Health Insurance TPA</option>
+                        </select>
+                      </div>
+
+                      <div style="display:flex; gap:10px; margin-top:18px;">
+                        <button type="submit" class="btn btn-primary btn-block">Confirm Settlement</button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('pay-modal-{{ b.BillID }}').style.display='none'">Cancel</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" style="text-align:center; padding:32px; color:var(--text-muted);">
+            No billing records found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

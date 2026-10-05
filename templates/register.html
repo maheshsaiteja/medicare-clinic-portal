@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Account Registration | MediCare+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="min-height:auto; padding-top:10px;">
+  <div class="auth-card" style="max-width: 640px;">
+    <div class="auth-header">
+      <div class="page-eyebrow">NEW CLINIC ENROLLMENT</div>
+      <h1 class="page-title" style="font-size:26px;">Create Account</h1>
+      <p class="page-desc">Register with MediCare+ to manage consultations, medical records, and digital invoices.</p>
+    </div>
+
+    <form method="post" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label class="form-label">I am registering as *</label>
+        <select class="form-control" name="role" id="roleSelector" onchange="toggleRoleFields(this.value)">
+          <option value="patient" selected>Patient (Book consultations, view Rx & bills)</option>
+          <option value="doctor">Medical Doctor / Specialist</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-control" type="text" name="name" required placeholder="e.g. Rahul Sharma">
+        </div>
+        <div class="form-group" id="dobGroup">
+          <label class="form-label">Date of Birth</label>
+          <input class="form-control" type="date" name="dob" value="2000-01-01">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Gender *</label>
+          <select class="form-control" name="gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" id="bloodGroupField">
+          <label class="form-label">Blood Group</label>
+          <select class="form-control" name="blood_group">
+            <option value="">Select (Optional)</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+          </select>
+        </div>
+        <div class="form-group" id="doctorSpecialtyField" style="display:none;">
+          <label class="form-label">Medical Specialization *</label>
+          <input class="form-control" type="text" name="specialization" placeholder="e.g. General Physician, Dermatologist">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone Number *</label>
+          <input class="form-control" type="tel" name="phone" required placeholder="10-digit mobile number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-control" type="email" name="email" placeholder="name@example.com">
+        </div>
+      </div>
+
+      <div class="form-group" id="addressField">
+        <label class="form-label">Residential Address</label>
+        <input class="form-control" type="text" name="address" placeholder="City, locality, pin code">
+      </div>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:18px 0;">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Choose Username *</label>
+          <input class="form-control" type="text" name="username" required placeholder="Unique username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Choose Password *</label>
+          <input class="form-control" type="password" name="password" required placeholder="Password">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px; font-size:15px; padding:12px;">Create Account &rarr;</button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px; font-size:13.5px; color:var(--text-muted);">
+      Already registered? <a href="{{ url_for('login') }}" style="font-weight:700; color:var(--primary);">Sign in here</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleRoleFields(role) {
+  const isDoctor = (role === 'doctor');
+  document.getElementById('doctorSpecialtyField').style.display = isDoctor ? 'block' : 'none';
+  document.getElementById('bloodGroupField').style.display = isDoctor ? 'none' : 'block';
+  document.getElementById('addressField').style.display = isDoctor ? 'none' : 'block';
+}
+</script>
+{% endblock %}

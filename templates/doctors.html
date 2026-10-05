@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Medical Specialists | MediCare+ Clinic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">OUR CLINICAL TEAM</div>
+    <h1 class="page-title">Specialists & Medical Officers</h1>
+    <p class="page-desc">Board-certified doctors across specialized hospital departments.</p>
+  </div>
+  {% if session.get('role') == 'patient' %}
+    <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Schedule Consultation</a>
+  {% endif %}
+</div>
+
+<!-- Department Filter Tabs -->
+<div style="display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap;">
+  <a href="{{ url_for('doctors') }}" class="btn btn-sm {{ 'btn-primary' if not selected_dept else 'btn-secondary' }}">All Departments</a>
+  {% for dept in departments %}
+    <a href="{{ url_for('doctors', dept=dept.DepartmentName) }}" 
+       class="btn btn-sm {{ 'btn-primary' if selected_dept == dept.DepartmentName else 'btn-secondary' }}">
+      {{ dept.DepartmentName }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="cards-grid">
+  {% for d in doctors %}
+  <div class="doctor-card">
+    <div>
+      <div class="doc-avatar">DR</div>
+      <h3 class="doc-name">{{ d.DoctorName }}</h3>
+      <div class="doc-specialty">{{ d.Specialization }} &bull; {{ d.DepartmentName }}</div>
+      
+      <div class="doc-details">
+        <div><strong>Qualifications:</strong> {{ d.Qualifications or 'MBBS, MD' }}</div>
+        <div><strong>Clinic Location:</strong> {{ d.RoomNumber or 'Consultation Room' }}</div>
+        <div><strong>Schedule:</strong> {{ d.AvailableDays or 'Mon - Sat' }}</div>
+        <div><strong>Phone:</strong> {{ d.Phone }}</div>
+        {% if d.Email %}
+          <div><strong>Email:</strong> {{ d.Email }}</div>
+        {% endif %}
+      </div>
+
+      <div class="doc-fee">
+        ₹{{ '%.2f'|format(d.ConsultationFee) }} <span style="font-size:12px; font-weight:500; color:var(--text-muted);">/ consultation</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 18px;">
+      {% if session.get('role') == 'patient' %}
+        <a class="btn btn-primary btn-sm btn-block" href="{{ url_for('new_appointment') }}">Book Appointment</a>
+      {% else %}
+        <a class="btn btn-secondary btn-sm btn-block" href="{{ url_for('login') }}">Sign In to Book</a>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div style="grid-column: 1 / -1; text-align:center; padding:40px; background:#fff; border-radius:var(--radius-lg); border:1px solid var(--border);">
+    <p style="color:var(--text-muted);">No doctors found under the selected department.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
