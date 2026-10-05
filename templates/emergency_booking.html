@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Emergency &amp; Immediate OPD Booking | MediCare+ Clinic{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="min-height:auto; padding-top:10px;">
+  <div class="auth-card" style="max-width: 680px;">
+    
+    <!-- Top Emergency Header -->
+    <div style="background: linear-gradient(135deg, #091424, #1a0f1c); border: 1px solid #4c0519; border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px; color: #fff;">
+      <div class="live-indicator" style="background:rgba(225,29,72,0.2); border-color:rgba(225,29,72,0.4); color:#fda4af; margin-bottom:8px;">
+        <span class="ticker-dot" style="background:#e11d48; box-shadow:0 0 10px #e11d48;"></span>
+        24/7 IMMEDIATE OPD VISIT DESK &bull; DIRECT ENTRY
+      </div>
+      <h1 style="color:#fff; font-size:24px; font-weight:800; margin:0 0 6px 0;">Schedule Immediate OPD Consultation</h1>
+      <p style="color:#cbd5e1; font-size:13.5px; line-height:1.5; margin:0;">
+        Fast-track outpatient medical appointments for acute symptoms and priority consultations. <strong>No login required to book.</strong>
+      </p>
+    </div>
+
+    {% if patient %}
+    <div style="background:var(--primary-light); border:1px solid #bfdbfe; border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:18px; font-size:13px; color:#1e40af; display:flex; align-items:center; gap:8px;">
+      <span>&#10004;</span>
+      <span>Signed in as <strong>{{ patient.PatientName }}</strong> ({{ patient.Phone }}). Your verified details have been pre-filled below.</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('emergency_booking') }}" id="emergencyOpdForm">
+      
+      <!-- Patient Demographics Section -->
+      <div class="page-eyebrow" style="margin-bottom:10px;">1. PATIENT DEMOGRAPHICS</div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Patient Full Name *</label>
+          <input class="form-control" type="text" name="patient_name" value="{{ patient.PatientName if patient else '' }}" required placeholder="e.g. Rahul Sharma" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mobile Number *</label>
+          <input class="form-control" type="tel" name="phone" value="{{ patient.Phone if patient else '' }}" required placeholder="10-digit mobile number" pattern="[0-9]{10,15}" autocomplete="tel">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input class="form-control" type="date" name="dob" value="{{ patient.DOB if patient and patient.DOB else '2000-01-01' }}">
+          <small style="font-size:11.5px; color:var(--text-muted);">Required for clinical health records</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender *</label>
+          <select class="form-control" name="gender" required>
+            <option value="Male" {% if patient and patient.Gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if patient and patient.Gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if patient and patient.Gender == 'Other' %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email Address (Optional)</label>
+          <input class="form-control" type="email" name="email" value="{{ patient.Email if patient and patient.Email else '' }}" placeholder="For digital Rx & invoice receipts">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Residential Address (Optional)</label>
+          <input class="form-control" type="text" name="address" value="{{ patient.Address if patient and patient.Address else '' }}" placeholder="City, locality">
+        </div>
+      </div>
+
+      <!-- Clinical Consultation Selection -->
+      <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+      <div class="page-eyebrow" style="margin-bottom:10px;">2. CLINICAL CONSULTANT &amp; SCHEDULE</div>
+
+      <div class="form-group">
+        <label class="form-label">Consulting Doctor &amp; Specialty *</label>
+        <select class="form-control" name="doctor_id" id="doctorSelect" required>
+          <option value="">-- Choose Attending Specialist --</option>
+          {% for doc in doctors %}
+            <option value="{{ doc.DoctorID }}" data-dept="{{ doc.DepartmentName }}" data-fee="{{ doc.ConsultationFee }}">
+              {{ doc.DoctorName }} &bull; {{ doc.Specialization }} ({{ doc.DepartmentName }}) &bull; Fee: ₹{{ '%.2f'|format(doc.ConsultationFee) }} ({{ doc.RoomNumber }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Preferred Appointment Date &amp; Time *</label>
+        <input class="form-control" type="datetime-local" name="appointment_date" id="apptDateInput" required>
+        <small style="font-size:11.5px; color:var(--text-muted); display:block; margin-top:4px;">
+          OPD consultations are open 8:00 AM &ndash; 8:00 PM. Please select an available slot today or upcoming.
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Primary Reason / Symptoms *</label>
+        <textarea class="form-control" name="reason" rows="2" required placeholder="Describe symptoms (e.g. Chest pain, high fever of 102F, severe skin rash, breathing trouble)"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Additional Medical Notes (Optional)</label>
+        <textarea class="form-control" name="symptoms" rows="2" placeholder="Onset of symptoms, current medications, or known allergies"></textarea>
+      </div>
+
+      <!-- Urgent Checkbox Indicator -->
+      <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:var(--radius-sm); padding:14px; margin-bottom:20px;">
+        <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:13.5px; color:#9f1239; font-weight:600; margin:0;">
+          <input type="checkbox" name="is_urgent" value="1" style="margin-top:3px; width:17px; height:17px; accent-color:#e11d48;">
+          <div>
+            <span>Mark as High Priority / Urgent Emergency Triage</span>
+            <small style="display:block; font-weight:400; color:#881337; margin-top:2px;">
+              Notifies clinical staff for rapid queue triage upon arrival at the hospital reception.
+            </small>
+          </div>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="font-size:16px; padding:13px;">
+        Confirm Immediate OPD Visit &rarr;
+      </button>
+
+      <div style="text-align:center; margin-top:16px;">
+        <a href="{{ url_for('emergency') }}" style="font-size:13px; color:var(--text-muted);">
+          &larr; Return to Emergency Care Overview
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Set default appointment time to current time + 15 minutes
+  (function() {
+    const input = document.getElementById('apptDateInput');
+    if (input && !input.value) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 15);
+      const localIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+      input.value = localIso;
+      input.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    }
+  })();
+</script>
+{% endblock %}

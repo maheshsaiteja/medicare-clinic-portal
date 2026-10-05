@@ -11,7 +11,7 @@
   {% if session.get('role') == 'patient' %}
     <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Schedule Consultation</a>
   {% elif session.get('role') == 'admin' %}
-    <a class="btn btn-primary" href="{{ url_for('dashboard') }}#doctorsSection" onclick="openAddDoctorModal(); return false;">+ Add New Doctor</a>
+    <a class="btn btn-primary" href="{{ url_for('add_doctor') }}">+ Add New Doctor</a>
   {% endif %}
 </div>
 
@@ -32,7 +32,7 @@
     <div>
       <div class="doc-avatar">DR</div>
       <h3 class="doc-name">{{ d.DoctorName }}</h3>
-      <div class="doc-specialty">{{ d.Specialization }} &bull; {{ d.DepartmentName }}</div>
+      <div class="doc-specialty">{{ d.Specialization }} &bull; <span class="badge" style="background:#f1f5f9; color:var(--text-body); font-size:11.5px;">{{ d.DepartmentName }}</span></div>
       
       <div class="doc-details">
         <div><strong>Qualifications:</strong> {{ d.Qualifications or 'MBBS, MD' }}</div>
@@ -52,15 +52,123 @@
     <div style="margin-top: 18px;">
       {% if session.get('role') == 'patient' %}
         <a class="btn btn-primary btn-sm btn-block" href="{{ url_for('new_appointment') }}">Book Appointment</a>
+      {% elif session.get('role') == 'admin' %}
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-primary btn-sm" style="flex:1; padding:8px 10px; font-size:12.5px;" onclick="openEditDocModal('{{ d.DoctorID }}')">
+            ✏️ Edit
+          </button>
+          <a href="{{ url_for('edit_doctor', doctor_id=d.DoctorID) }}" class="btn btn-secondary btn-sm" style="padding:8px 10px; font-size:12.5px;" title="Open in dedicated page">
+            &#9881;
+          </a>
+          <form method="post" action="{{ url_for('delete_doctor', doctor_id=d.DoctorID) }}" onsubmit="return confirm('Are you sure you want to permanently delete Dr. {{ d.DoctorName }}? This will remove all their appointments and data.');" style="margin:0;">
+            <button type="submit" class="btn btn-sm" style="background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; padding:8px 12px; font-weight:700; font-size:12.5px;">
+              🗑️ Delete
+            </button>
+          </form>
+        </div>
       {% else %}
         <a class="btn btn-secondary btn-sm btn-block" href="{{ url_for('login') }}">Sign In to Book</a>
       {% endif %}
     </div>
   </div>
+
+  {% if session.get('role') == 'admin' %}
+  <!-- Admin Edit Doctor Modal -->
+  <div id="editDocModal-{{ d.DoctorID }}" class="doctor-edit-modal-wrap" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:9999; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);">
+    <div class="auth-card" style="max-width:580px; width:100%; text-align:left; max-height:90vh; overflow-y:auto; border-radius:var(--radius-lg); padding:28px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <div>
+          <div class="page-eyebrow" style="font-size:10.5px;">ADMIN DOCTOR MANAGEMENT</div>
+          <h3 style="font-size:19px; margin:2px 0 0 0; color:var(--navy-dark);">Modify Dr. {{ d.DoctorName }}</h3>
+        </div>
+        <button type="button" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);" onclick="closeEditDocModal('{{ d.DoctorID }}')">&times;</button>
+      </div>
+
+      <form method="post" action="{{ url_for('edit_doctor', doctor_id=d.DoctorID) }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Doctor Full Name *</label>
+            <input class="form-control" type="text" name="doctor_name" value="{{ d.DoctorName }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Clinical Department *</label>
+            <select class="form-control" name="department_id" required>
+              {% for dept in departments %}
+                <option value="{{ dept.DepartmentID }}" {{ 'selected' if dept.DepartmentID == d.DepartmentID }}>
+                  {{ dept.DepartmentName }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Specialization *</label>
+            <input class="form-control" type="text" name="specialization" value="{{ d.Specialization }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Qualifications</label>
+            <input class="form-control" type="text" name="qualifications" value="{{ d.Qualifications or 'MBBS, MD' }}">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Consultation Fee (₹) *</label>
+            <input class="form-control" type="number" step="0.01" name="consultation_fee" value="{{ d.ConsultationFee }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Room / Cabin Number</label>
+            <input class="form-control" type="text" name="room_number" value="{{ d.RoomNumber or 'Cabin 101' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Visiting Schedule / Timings</label>
+          <input class="form-control" type="text" name="available_days" value="{{ d.AvailableDays or 'Mon - Sat' }}">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mobile Phone Number *</label>
+            <input class="form-control" type="tel" name="phone" value="{{ d.Phone }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input class="form-control" type="email" name="email" value="{{ d.Email or '' }}">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px; border-top:1px solid var(--border); padding-top:16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditDocModal('{{ d.DoctorID }}')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes (SQL Update)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
   {% else %}
   <div style="grid-column: 1 / -1; text-align:center; padding:40px; background:#fff; border-radius:var(--radius-lg); border:1px solid var(--border);">
     <p style="color:var(--text-muted);">No doctors found under the selected department.</p>
   </div>
   {% endfor %}
 </div>
+
+<script>
+function openEditDocModal(id) {
+  var m = document.getElementById('editDocModal-' + id);
+  if (m) {
+    m.style.setProperty('display', 'flex', 'important');
+    document.body.style.overflow = 'hidden';
+  }
+}
+function closeEditDocModal(id) {
+  var m = document.getElementById('editDocModal-' + id);
+  if (m) {
+    m.style.setProperty('display', 'none', 'important');
+    document.body.style.overflow = '';
+  }
+}
+</script>
 {% endblock %}

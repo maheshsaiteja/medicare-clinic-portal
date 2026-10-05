@@ -21,64 +21,500 @@
   </div>
 </div>
 
-<!-- Main Hero Showcase -->
+{% block extra_css %}
+<style>
+/* 3-Column Hero Layout: Text on Left, Doctor in Center, Emergency Card on Right */
+.hero-section {
+  max-width: 1240px !important;
+  margin: 0 auto 36px auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.7fr) minmax(0, 1.05fr) !important;
+  gap: 28px !important;
+  align-items: center !important;
+  padding: 36px 32px 40px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.hero-text-content {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.hero-center-col {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  height: 100% !important;
+}
+
+.hero-doctor-center-photo {
+  width: 100% !important;
+  max-width: 220px !important;
+  height: auto !important;
+  max-height: 420px !important;
+  object-fit: contain !important;
+  display: block !important;
+  filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.08)) !important;
+}
+
+.hero-right-col {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+.hero-card-banner {
+  background: #ffffff !important;
+  border: 1px solid rgba(2, 132, 199, 0.16) !important;
+  border-radius: 20px !important;
+  padding: 24px 22px 20px !important;
+  color: var(--text-title) !important;
+  box-shadow: 0 20px 45px -15px rgba(2, 132, 199, 0.14), 0 4px 16px -2px rgba(15, 23, 42, 0.05) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+.hero-card-banner:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 26px 55px -15px rgba(2, 132, 199, 0.22) !important;
+}
+
+.hero-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  margin-bottom: 8px !important;
+}
+
+.hero-card-tag {
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+  display: block !important;
+}
+
+.hero-card-title {
+  color: #091424 !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  margin: 4px 0 0 0 !important;
+  line-height: 1.25 !important;
+}
+
+.hero-card-badge-plus {
+  background: linear-gradient(135deg, #0284c7, #0d9488) !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 800 !important;
+  font-size: 22px !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+}
+
+.hero-card-desc {
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  margin: 6px 0 14px 0 !important;
+}
+
+.hero-rich-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin: 0 0 16px 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.hero-rich-item {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 0 14px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-decoration: none !important;
+  color: #0f172a !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.hero-rich-item:hover {
+  background: #f0f9ff !important;
+  border-color: #38bdf8 !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08) !important;
+}
+
+.rich-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  border-radius: 9px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.rich-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  overflow: hidden !important;
+}
+
+.rich-info strong {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  line-height: 1.25 !important;
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.rich-info span {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  line-height: 1.2 !important;
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.rich-chevron {
+  color: #94a3b8 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  font-weight: 700 !important;
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+  padding-left: 6px !important;
+  transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+.hero-rich-item:hover .rich-chevron {
+  color: #0284c7 !important;
+  transform: translateX(2px) !important;
+}
+
+.hero-card-action {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.hero-schedule-btn {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 13px 20px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.28) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.hero-card-emergency-strip {
+  margin-top: 14px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.emergency-help-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.emergency-phone-circle {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.35) !important;
+}
+
+.emergency-help-title {
+  color: #0f172a !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.emergency-help-sub {
+  color: #64748b !important;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+.btn-emergency-pill {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.btn-emergency-pill:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.45) !important;
+}
+
+.hero-trust-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+}
+
+.hero-trust-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+}
+
+.hero-trust-sep {
+  color: #cbd5e1 !important;
+  font-size: 10px !important;
+}
+
+@media (max-width: 1100px) {
+  .hero-section {
+    grid-template-columns: 1.15fr 0.6fr 1fr !important;
+    gap: 20px !important;
+    padding: 28px 20px !important;
+  }
+  .hero-headline {
+    font-size: 32px !important;
+  }
+  .hero-doctor-center-photo {
+    max-width: 175px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-section {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+    padding: 24px 18px !important;
+  }
+  .hero-headline {
+    font-size: 28px !important;
+  }
+  .hero-center-col {
+    order: 2 !important;
+    margin: 8px 0 !important;
+  }
+  .hero-doctor-center-photo {
+    max-width: 180px !important;
+  }
+  .hero-right-col {
+    order: 3 !important;
+  }
+}
+</style>
+{% endblock %}
+
+<!-- Main Hero Showcase (3 Columns: Text on Left, Doctor in Center, Desk on Right) -->
 <section class="hero-section">
-  <div class="hero-content">
+  <!-- 1. Left: Hero Text Content -->
+  <div class="hero-text-content">
     <div class="live-indicator">
       <span class="pulse-dot"></span>
-      CLINICAL OPD & EMERGENCY PORTAL &bull; 24/7 READY
+      CLINICAL OPD &amp; EMERGENCY PORTAL &bull; 24/7 READY
     </div>
-    <h1>Modern healthcare,<br><span class="highlight">compassionate excellence.</span></h1>
+    <h1 class="hero-headline">Modern healthcare,<br><span class="highlight">compassionate excellence.</span></h1>
     <p class="hero-lead">
       MediCare+ connects patients with board-certified clinical specialists, real-time appointment scheduling, verified e-prescriptions, and transparent paperless billing.
     </p>
 
     <div class="hero-actions">
       {% if session.get('user_id') %}
-        <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to Workspace &rarr;</a>
-        <a class="btn btn-secondary" href="{{ url_for('appointments') }}">My Consultations</a>
+        <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Open My Workspace &rarr;</a>
+        <a class="btn btn-secondary" href="{{ url_for('new_appointment') }}">&#128197; Book Consultation</a>
       {% else %}
-        <a class="btn btn-primary" href="{{ url_for('login') }}">Access Clinic Portal &rarr;</a>
-        <a class="btn btn-secondary" href="{{ url_for('register') }}">Patient Registration</a>
+        <a class="btn btn-primary" href="{{ url_for('login') }}">Access Patient Portal &rarr;</a>
+        <a class="btn btn-secondary" href="{{ url_for('register') }}">&#128100; Register as Patient</a>
       {% endif %}
     </div>
 
     <!-- Trust Badges Strip -->
-    <div style="display:flex; gap:16px; margin-top:28px; flex-wrap:wrap; font-size:12.5px; color:var(--text-muted); font-weight:600;">
-      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:#f59e0b;">★ 4.9/5</strong> Patient Satisfaction</span>
-      <span>&bull;</span>
-      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:var(--emerald);">100%</strong> Board Certified Specialists</span>
-      <span>&bull;</span>
-      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:var(--primary);">Instant</strong> Digital Records</span>
+    <div class="hero-trust-strip">
+      <div class="hero-trust-item">
+        <span style="color:#f59e0b; font-size:13px;">&#9733;</span>
+        <span><strong>4.9/5</strong> Satisfaction</span>
+      </div>
+      <span class="hero-trust-sep">&bull;</span>
+      <div class="hero-trust-item">
+        <span style="color:var(--emerald); font-size:13px;">&#10004;</span>
+        <span><strong>100%</strong> Certified</span>
+      </div>
+      <span class="hero-trust-sep">&bull;</span>
+      <div class="hero-trust-item">
+        <span style="color:var(--primary); font-size:13px;">&#128196;</span>
+        <span><strong>Instant</strong> Records</span>
+      </div>
     </div>
   </div>
 
-  <!-- Medical Clinic Quick Info Card -->
-  <div class="hero-card-banner">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
-      <div>
-        <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">HOSPITAL OPD & CLINICAL CARE</span>
-        <h3 style="margin-top:4px;">Emergency & OPD Desk</h3>
+  <!-- 2. Center: Doctor & Patient Graphic Centered -->
+  <div class="hero-center-col">
+    <img src="{{ url_for('static', filename='images/hero_doctor_patient_clean.png') }}" alt="Hospital Doctor and Patient Consultation" class="hero-doctor-center-photo" loading="eager">
+  </div>
+
+  <!-- 3. Right: Emergency & OPD Desk Card -->
+  <div class="hero-right-col">
+    <div class="hero-card-banner">
+      <div class="hero-card-header">
+        <div>
+          <span class="hero-card-tag">HOSPITAL OPD &amp; CLINICAL CARE</span>
+          <h3 class="hero-card-title">Emergency &amp; OPD Desk</h3>
+        </div>
+        <div class="hero-card-badge-plus">+</div>
       </div>
-      <div style="background:linear-gradient(135deg, #0284c7, #0d9488); width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:26px; box-shadow:0 6px 16px rgba(2, 132, 199, 0.4); color:#fff;">+</div>
-    </div>
-    <p>
-      Multi-specialty outpatient consultations, on-site digital pharmacy, automated invoicing with GST, and rapid emergency triage.
-    </p>
+      <p class="hero-card-desc">
+        Multi-specialty outpatient consultations, on-site digital pharmacy, automated invoicing with GST, and rapid emergency triage.
+      </p>
 
-    <div class="sql-features-list" style="margin-top:20px; padding-top:16px;">
-      <div class="sql-badge">&#128337; <span><strong>OPD Timings:</strong> 8:00 AM &ndash; 8:00 PM Daily</span></div>
-      <div class="sql-badge">&#128138; <span><strong>Digital Pharmacy:</strong> Instant verified Rx issuance</span></div>
-      <div class="sql-badge">&#127973; <span><strong>Departments:</strong> Cardiology, Dermatology, Pediatrics, General Medicine</span></div>
-      <div class="sql-badge">&#128179; <span><strong>Cashless Billing:</strong> UPI, Card, Cash, & Insurance Support</span></div>
-    </div>
+      <!-- 4 Rich Interactive Items with Chevrons (Uniform Height, Icon + Stacked Text + Arrow) -->
+      <div class="hero-rich-list">
+        <a href="{{ url_for('emergency_booking') }}" class="hero-rich-item">
+          <div class="rich-icon" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">
+            &#128337;
+          </div>
+          <div class="rich-info">
+            <strong>OPD Timings</strong>
+            <span>8:00 AM &ndash; 8:00 PM Daily</span>
+          </div>
+          <span class="rich-chevron">&rsaquo;</span>
+        </a>
 
-    <div style="margin-top:24px;">
-      {% if session.get('role') == 'patient' %}
-        <a class="btn btn-primary btn-block" href="{{ url_for('new_appointment') }}">Book Doctor Consultation &rarr;</a>
-      {% else %}
-        <a class="btn btn-primary btn-block" href="{{ url_for('login') }}">Schedule Appointment &rarr;</a>
-      {% endif %}
+        <a href="{{ url_for('prescriptions') if session.get('user_id') else url_for('login') }}" class="hero-rich-item">
+          <div class="rich-icon" style="background: linear-gradient(135deg, #ea580c, #f97316);">
+            &#128138;
+          </div>
+          <div class="rich-info">
+            <strong>Digital Pharmacy</strong>
+            <span>Instant verified Rx issuance</span>
+          </div>
+          <span class="rich-chevron">&rsaquo;</span>
+        </a>
+
+        <a href="{{ url_for('departments') }}" class="hero-rich-item">
+          <div class="rich-icon" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+            &#127973;
+          </div>
+          <div class="rich-info">
+            <strong>Departments</strong>
+            <span>Cardiology, Dermatology, Pediatrics, General Medicine</span>
+          </div>
+          <span class="rich-chevron">&rsaquo;</span>
+        </a>
+
+        <a href="{{ url_for('bills') if session.get('user_id') else url_for('login') }}" class="hero-rich-item">
+          <div class="rich-icon" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+            &#128179;
+          </div>
+          <div class="rich-info">
+            <strong>Cashless Billing</strong>
+            <span>UPI, Card, Cash, &amp; Insurance Support</span>
+          </div>
+          <span class="rich-chevron">&rsaquo;</span>
+        </a>
+      </div>
+
+      <!-- Schedule Appointment Button -->
+      <div class="hero-card-action">
+        <a class="btn hero-schedule-btn" href="{{ url_for('new_appointment') if session.get('role') == 'patient' else url_for('emergency_booking') }}">
+          &#128197; Schedule Appointment &rarr;
+        </a>
+      </div>
+
+      <!-- Inside Card Emergency Support Strip -->
+      <div class="hero-card-emergency-strip">
+        <div class="emergency-help-info">
+          <div class="emergency-phone-circle">
+            &#128222;
+          </div>
+          <div>
+            <div class="emergency-help-title">Need urgent medical help?</div>
+            <div class="emergency-help-sub">Call our 24/7 emergency support</div>
+          </div>
+        </div>
+        <a href="tel:+919000000001" class="btn-emergency-pill">
+          <span>&#128680;</span> Emergency Assistance
+        </a>
+      </div>
     </div>
   </div>
 </section>
@@ -250,23 +686,26 @@
 </section>
 {% endif %}
 
-<!-- Emergency & Support Strip -->
-<div class="panel" style="background: linear-gradient(135deg, #091424, #0f2744); color: #fff; border-color: #1e3a5f; margin-bottom: 0;">
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+<!-- Emergency Medical Assistance Strip (Screenshot 3 Matched) -->
+<div class="panel" style="background: linear-gradient(135deg, #091424, #1e1124 50%, #290a18 100%); color: #fff; border-color: #4c0519; margin-bottom: 0; padding: 32px 36px; border-radius: var(--radius-lg);">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
     <div>
-      <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">IMMEDIATE MEDICAL SUPPORT</span>
-      <h3 style="color:#fff; font-size:20px; margin-top:2px;">Need Emergency Medical Assistance?</h3>
-      <p style="color:#94a3b8; font-size:13.5px; margin-top:2px;">Our triage response team and emergency medical desk are active 24 hours a day, 7 days a week.</p>
+      <div class="live-indicator" style="background:rgba(225,29,72,0.18); border-color:rgba(225,29,72,0.4); color:#fda4af; margin-bottom:10px;">
+        <span class="ticker-dot" style="background:#e11d48; box-shadow:0 0 10px #e11d48;"></span>
+        24/7 EMERGENCY MEDICAL TRIAGE &bull; ON-DUTY
+      </div>
+      <h2 style="color:#fff; font-size:26px; font-weight:800; margin:0 0 6px 0; letter-spacing:-0.01em;">Emergency Medical Assistance</h2>
+      <p style="color:#cbd5e1; font-size:14.5px; margin:0; max-width:620px; line-height:1.6;">
+        Immediate response medical triage, emergency cardiac evaluation, acute trauma care, and direct specialist on-call dispatch available 24 hours a day, 7 days a week.
+      </p>
     </div>
-    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-      <a class="btn btn-secondary" href="tel:+919000000001" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
-        &#128222; Call +91 90000 00001
+    <div style="display:flex; flex-direction:column; gap:10px; min-width:260px;">
+      <a class="btn" href="tel:+919000000001" style="background:#e11d48; color:#fff; font-size:15px; font-weight:700; padding:13px 22px; border-radius:var(--radius-md); box-shadow:0 6px 20px rgba(225,29,72,0.4); display:flex; align-items:center; justify-content:center; gap:8px; border:none; text-decoration:none;">
+        &#128222; Call Emergency: +91 90000 00001
       </a>
-      {% if session.get('user_id') %}
-        <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">Book Emergency OPD &rarr;</a>
-      {% else %}
-        <a class="btn btn-primary" href="{{ url_for('login') }}">Access Emergency OPD &rarr;</a>
-      {% endif %}
+      <a class="btn btn-secondary" href="{{ url_for('emergency_booking') }}" style="background:rgba(255,255,255,0.08); color:#f8fafc; border:1px solid rgba(255,255,255,0.22); text-align:center; padding:11px 20px; font-weight:600; font-size:14px; border-radius:var(--radius-md); text-decoration:none;">
+        Book Immediate OPD Visit &rarr;
+      </a>
     </div>
   </div>
 </div>

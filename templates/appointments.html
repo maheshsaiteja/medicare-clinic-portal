@@ -63,17 +63,22 @@
           <td>
             <div>{{ a.Reason or 'Consultation' }}</div>
             {% if a.Symptoms %}
-              <small style="color:var(--text-muted); display:block;">Symptoms: {{ a.Symptoms }}</small>
+              <small style="color:var(--text-muted); display:block; margin-top:2px;">Symptoms: {{ a.Symptoms }}</small>
             {% endif %}
             {% if a.Diagnosis %}
-              <small style="color:var(--teal); font-weight:600; display:block;">Diagnosis: {{ a.Diagnosis }}</small>
+              <small style="color:var(--teal); font-weight:700; display:block; margin-top:3px;">&#10004; Diagnosis: {{ a.Diagnosis }}</small>
+            {% endif %}
+            {% if a.DoctorNotes %}
+              <small style="color:#475569; display:block; font-size:11.5px; margin-top:2px; background:#f8fafc; padding:3px 6px; border-radius:4px; border-left:2px solid var(--teal);">
+                <strong>Advice:</strong> {{ a.DoctorNotes }}
+              </small>
             {% endif %}
           </td>
           <td>
             <span class="badge badge-{{ a.Status|lower }}">{{ a.Status }}</span>
           </td>
 
-          <!-- Clickable Bill Status (Screenshots 3 & 4 Fix) -->
+          <!-- Clickable Bill Status -->
           <td>
             {% if a.BillID %}
               <a href="{{ url_for('invoice', bill_id=a.BillID) }}" class="badge badge-{{ a.PaymentStatus|lower }}" title="Click to view & print invoice" style="text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
@@ -101,8 +106,8 @@
 
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
                   {% if session.get('role') == 'doctor' %}
-                    <button type="button" class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:12px;" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='flex'">
-                      + Prescribe
+                    <button type="button" class="btn btn-primary btn-sm" style="padding:4px 8px; font-size:12px;" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='flex'">
+                      + Consult &amp; Rx
                     </button>
                   {% endif %}
 
@@ -114,44 +119,58 @@
                 </div>
 
                 {% if session.get('role') == 'doctor' %}
-                  <!-- Prescription Modal -->
-                  <div id="rx-modal-{{ a.AppointmentID }}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
-                    <div class="auth-card" style="max-width:500px; text-align:left;">
-                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                        <h3 style="font-size:18px;">Prescribe for Visit #{{ a.AppointmentID }}</h3>
-                        <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='none'">&times;</button>
+                  <!-- Comprehensive Doctor Consultation & Prescription Modal -->
+                  <div id="rx-modal-{{ a.AppointmentID }}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center; padding:16px;">
+                    <div class="auth-card" style="max-width:540px; text-align:left; max-height:90vh; overflow-y:auto; border-radius:var(--radius-lg);">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                        <div>
+                          <div class="page-eyebrow" style="font-size:10.5px;">CLINICAL CONSULTATION &bull; VISIT #{{ a.AppointmentID }}</div>
+                          <h3 style="font-size:18px; margin:2px 0 0 0;">{{ a.PatientName }}</h3>
+                        </div>
+                        <button type="button" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='none'">&times;</button>
                       </div>
 
                       <form method="post" action="{{ url_for('add_prescription', appointment_id=a.AppointmentID) }}">
                         <div class="form-group">
-                          <label class="form-label">Clinical Diagnosis</label>
-                          <input class="form-control" type="text" name="diagnosis" value="{{ a.Diagnosis or '' }}" placeholder="e.g. Acute Bronchitis" required>
+                          <label class="form-label">Clinical Diagnosis *</label>
+                          <input class="form-control" type="text" name="diagnosis" value="{{ a.Diagnosis or '' }}" placeholder="e.g. Acute Bronchitis, Viral Fever, Hypertension" required>
                         </div>
 
-                        <div class="form-row">
-                          <div class="form-group">
-                            <label class="form-label">Medicine Name *</label>
-                            <input class="form-control" type="text" name="medicine" placeholder="e.g. Amoxicillin" required>
-                          </div>
-                          <div class="form-group">
-                            <label class="form-label">Dosage *</label>
-                            <input class="form-control" type="text" name="dosage" placeholder="e.g. 500 mg" required>
-                          </div>
+                        <div class="form-group">
+                          <label class="form-label">Clinical Advice &amp; Doctor's Notes</label>
+                          <textarea class="form-control" name="notes" rows="2" placeholder="e.g. Rest for 3 days, drink warm fluids, review in 1 week">{{ a.DoctorNotes or '' }}</textarea>
                         </div>
 
-                        <div class="form-row">
-                          <div class="form-group">
-                            <label class="form-label">Duration *</label>
-                            <input class="form-control" type="text" name="duration" placeholder="e.g. 5 days" required>
+                        <div style="background:var(--surface-alt); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom:16px;">
+                          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--teal); margin-bottom:8px;">
+                            &#128138; Prescribe Medication
                           </div>
-                          <div class="form-group">
-                            <label class="form-label">Instructions</label>
-                            <input class="form-control" type="text" name="instructions" value="Take after meals" placeholder="e.g. Twice daily after meals">
+
+                          <div class="form-row">
+                            <div class="form-group">
+                              <label class="form-label" style="font-size:12px;">Medicine Name *</label>
+                              <input class="form-control" type="text" name="medicine" placeholder="e.g. Amoxicillin, Paracetamol" required>
+                            </div>
+                            <div class="form-group">
+                              <label class="form-label" style="font-size:12px;">Dosage *</label>
+                              <input class="form-control" type="text" name="dosage" placeholder="e.g. 500 mg, 1 tablet" required>
+                            </div>
+                          </div>
+
+                          <div class="form-row">
+                            <div class="form-group">
+                              <label class="form-label" style="font-size:12px;">Duration *</label>
+                              <input class="form-control" type="text" name="duration" placeholder="e.g. 5 days, 1 week" required>
+                            </div>
+                            <div class="form-group">
+                              <label class="form-label" style="font-size:12px;">Directions / Instructions</label>
+                              <input class="form-control" type="text" name="instructions" value="Take after meals" placeholder="e.g. Twice daily after meals">
+                            </div>
                           </div>
                         </div>
 
                         <div style="display:flex; gap:10px; margin-top:16px;">
-                          <button type="submit" class="btn btn-primary btn-block">Save & Issue Rx</button>
+                          <button type="submit" class="btn btn-primary btn-block">Complete Visit &amp; Save Rx</button>
                           <button type="button" class="btn btn-secondary" onclick="document.getElementById('rx-modal-{{ a.AppointmentID }}').style.display='none'">Cancel</button>
                         </div>
                       </form>
@@ -162,16 +181,22 @@
 
             {% else %}
               <!-- Patient Actions -->
-              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                 {% if a.BillID %}
                   <a class="btn btn-sm btn-outline" href="{{ url_for('invoice', bill_id=a.BillID) }}" style="padding:4px 10px; font-size:12px;">
                     View Invoice &#8599;
                   </a>
                 {% endif %}
                 {% if a.Status == 'Completed' %}
-                  <a class="btn btn-sm btn-secondary" href="{{ url_for('prescriptions') }}" style="padding:4px 10px; font-size:12px;">
-                    View Rx
+                  <a class="btn btn-sm btn-secondary" href="{{ url_for('prescriptions') }}" style="padding:4px 10px; font-size:12px; background:#ccfbf1; color:#0f766e; border-color:#99f6e4;">
+                    View Rx &#128138;
                   </a>
+                {% elif a.Status in ('Scheduled', 'Confirmed') %}
+                  <form method="post" action="{{ url_for('cancel_appointment', appointment_id=a.AppointmentID) }}" onsubmit="return confirm('Are you sure you wish to cancel Consultation #{{ a.AppointmentID }}?');" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-outline" style="padding:4px 10px; font-size:12px; color:#e11d48; border-color:#fecdd3;">
+                      Cancel Visit
+                    </button>
+                  </form>
                 {% endif %}
               </div>
             {% endif %}

@@ -7,7 +7,8 @@
   <title>{% block title %}MediCare+ Clinic Management System{% endblock %}</title>
   <meta name="description"
     content="Comprehensive SQL-backed Clinic & Hospital Management System with multi-role access, appointment booking, e-prescriptions, and billing.">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.5">
+  {% block extra_css %}{% endblock %}
 </head>
 
 <body>
@@ -68,9 +69,9 @@
       <div class="nav-user">
         {% if session.get('user_id') %}
           {% if session.get('role') == 'admin' %}
-            <button type="button" class="btn btn-primary btn-sm" onclick="openAddDoctorModal()" style="font-size:12.5px; padding:6px 14px;">
+            <a class="btn btn-primary btn-sm" href="{{ url_for('add_doctor') }}" style="font-size:12.5px; padding:6px 14px;">
               + Add Doctor
-            </button>
+            </a>
           {% elif session.get('role') == 'patient' %}
             <a class="btn btn-primary btn-sm" href="{{ url_for('new_appointment') }}" style="font-size:12.5px; padding:6px 14px;">
               + Book Visit
@@ -82,14 +83,11 @@
           </div>
           <a class="btn-logout" href="{{ url_for('logout') }}">Sign Out</a>
         {% else %}
-          <a class="btn btn-primary btn-sm" href="{{ url_for('new_appointment') if session.get('role') == 'patient' else url_for('login') }}">
-            + Book Consultation
-          </a>
           <a class="btn btn-secondary btn-sm" href="{{ url_for('login') }}">
-            Sign In
+            &#128100; Patient Login
           </a>
-          <a class="btn btn-outline btn-sm" href="{{ url_for('register') }}">
-            Register
+          <a class="btn btn-primary btn-sm" href="{{ url_for('emergency_booking') }}">
+            Book Appointment &rarr;
           </a>
         {% endif %}
       </div>

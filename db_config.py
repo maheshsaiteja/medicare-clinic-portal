@@ -195,7 +195,8 @@ def get_mysql_connection(database=None, timeout=3):
                             'ssl_disabled': False,
                             'connection_timeout': timeout,
                             'charset': 'utf8mb4',
-                            'use_pure': True
+                            'use_pure': True,
+                            'autocommit': True
                         }
                         if cfg['ssl_ca']:
                             pool_kwargs['ssl_ca'] = cfg['ssl_ca']
@@ -206,7 +207,7 @@ def get_mysql_connection(database=None, timeout=3):
 
                         _connection_pool = pooling.MySQLConnectionPool(
                             pool_name="medicare_pool",
-                            pool_size=5,
+                            pool_size=10,
                             pool_reset_session=True,
                             **pool_kwargs
                         )
@@ -215,7 +216,9 @@ def get_mysql_connection(database=None, timeout=3):
 
         if _connection_pool is not None:
             try:
-                return _connection_pool.get_connection()
+                conn = _connection_pool.get_connection()
+                conn.autocommit = True
+                return conn
             except Exception:
                 pass
 
@@ -228,7 +231,8 @@ def get_mysql_connection(database=None, timeout=3):
         'ssl_disabled': False,
         'connection_timeout': timeout,
         'charset': 'utf8mb4',
-        'use_pure': True
+        'use_pure': True,
+        'autocommit': True
     }
 
     if target_db:
@@ -241,7 +245,9 @@ def get_mysql_connection(database=None, timeout=3):
         kwargs['ssl_verify_cert'] = False
         kwargs['ssl_verify_identity'] = False
 
-    return mysql.connector.connect(**kwargs)
+    conn = mysql.connector.connect(**kwargs)
+    conn.autocommit = True
+    return conn
 
 def get_display_engine_name():
     """Returns human-friendly engine name for UI badges and diagnostics."""

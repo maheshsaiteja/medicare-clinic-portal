@@ -18,7 +18,7 @@
       <a class="btn" href="tel:+919000000001" style="background:#e11d48; color:#fff; font-size:16px; padding:14px 24px; border-radius:var(--radius-md); box-shadow:0 6px 20px rgba(225,29,72,0.4); display:flex; align-items:center; gap:8px;">
         &#128222; Call Emergency: +91 90000 00001
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('new_appointment') if session.get('role') == 'patient' else url_for('login') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2); text-align:center;">
+      <a class="btn btn-secondary" href="{{ url_for('emergency_booking') }}" style="background:rgba(255,255,255,0.15); color:#fff; border-color:rgba(255,255,255,0.3); text-align:center; padding:12px 20px; font-weight:700;">
         Book Immediate OPD Visit &rarr;
       </a>
     </div>

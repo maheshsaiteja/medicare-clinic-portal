@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Edit Doctor Details | MediCare+ Admin{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 0 auto; padding: 20px 0;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+    <div>
+      <div class="page-eyebrow">ADMIN MANAGEMENT</div>
+      <h1 class="page-title" style="font-size:26px;">Edit Doctor Details</h1>
+      <p class="page-desc">Modify clinical profile, specialization, visiting hours, and fees in MySQL.</p>
+    </div>
+    <a href="{{ url_for('doctors') }}" class="btn btn-secondary">&larr; Back to Doctors</a>
+  </div>
+
+  <div class="auth-card" style="text-align: left; padding: 32px; border-radius: var(--radius-lg); background:#fff; border:1px solid var(--border); box-shadow:var(--shadow-md);">
+    <form method="post" action="{{ url_for('edit_doctor', doctor_id=doctor.DoctorID) }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Doctor Full Name *</label>
+          <input class="form-control" type="text" name="doctor_name" value="{{ doctor.DoctorName }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Clinical Department *</label>
+          <select class="form-control" name="department_id" required>
+            {% for dept in departments %}
+              <option value="{{ dept.DepartmentID }}" {{ 'selected' if dept.DepartmentID == doctor.DepartmentID }}>
+                {{ dept.DepartmentName }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Specialization *</label>
+          <input class="form-control" type="text" name="specialization" value="{{ doctor.Specialization }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Qualifications</label>
+          <input class="form-control" type="text" name="qualifications" value="{{ doctor.Qualifications or 'MBBS, MD' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Consultation Fee (₹) *</label>
+          <input class="form-control" type="number" step="0.01" name="consultation_fee" value="{{ doctor.ConsultationFee }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Room / Cabin Number</label>
+          <input class="form-control" type="text" name="room_number" value="{{ doctor.RoomNumber or 'Cabin 101' }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Visiting Schedule / Timings</label>
+        <input class="form-control" type="text" name="available_days" value="{{ doctor.AvailableDays or 'Mon - Sat' }}">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Mobile Phone Number *</label>
+          <input class="form-control" type="tel" name="phone" value="{{ doctor.Phone }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-control" type="email" name="email" value="{{ doctor.Email or '' }}">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top: 24px; border-top:1px solid var(--border); padding-top:18px;">
+        <a href="{{ url_for('doctors') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes (SQL Update)</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

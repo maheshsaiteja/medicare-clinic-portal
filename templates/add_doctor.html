@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Add New Doctor to Staff | MediCare+ Clinic Management{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom:20px;">
+  <div>
+    <div class="page-eyebrow">HOSPITAL ONBOARDING PORTAL</div>
+    <h1 class="page-title">Add New Doctor to Staff</h1>
+    <p class="page-desc">Register a licensed medical specialist, assign clinical department, consultation fee, and initial login credentials.</p>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a>
+    <a class="btn btn-outline btn-sm" href="{{ url_for('doctors') }}">View All Doctors</a>
+  </div>
+</div>
+
+<div class="auth-wrapper" style="min-height:auto; padding-top:0;">
+  <div class="auth-card" style="max-width:780px; text-align:left;">
+    <form method="post" action="{{ url_for('add_doctor') }}">
+      
+      <!-- Section 1: Professional Details -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:28px; height:28px; border-radius:50%; background:var(--primary-light); color:var(--primary); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center;">1</div>
+          <h3 style="font-size:16px; font-weight:700; color:var(--navy-dark); margin:0;">Physician & Clinical Specialization</h3>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Doctor Full Name *</label>
+          <input type="text" name="doctor_name" class="form-control" placeholder="e.g. Dr. Ramesh Chander" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Clinical Department *</label>
+            <select name="department_id" class="form-control" required>
+              {% for dep in departments %}
+                <option value="{{ dep.DepartmentID }}">{{ dep.DepartmentName }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Specialization *</label>
+            <input type="text" name="specialization" class="form-control" placeholder="e.g. Senior Cardiologist" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Qualifications</label>
+            <input type="text" name="qualifications" class="form-control" placeholder="e.g. MBBS, MD, DM" value="MBBS, MD">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Consultation Fee (₹) *</label>
+            <input type="number" step="50" name="consultation_fee" class="form-control" value="600" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Availability & Room -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:28px; height:28px; border-radius:50%; background:#dcfce7; color:#15803d; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center;">2</div>
+          <h3 style="font-size:16px; font-weight:700; color:var(--navy-dark); margin:0;">Clinic Location & Availability</h3>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cabin / Room Number</label>
+            <input type="text" name="room_number" class="form-control" placeholder="e.g. Cabin 204" value="Cabin 204">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Available Days / Timings</label>
+            <input type="text" name="available_days" class="form-control" placeholder="e.g. Mon - Sat, 9 AM - 2 PM" value="Mon - Sat, 9 AM - 2 PM">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Contact & System Credentials -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:28px; height:28px; border-radius:50%; background:#fef3c7; color:#b45309; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center;">3</div>
+          <h3 style="font-size:16px; font-weight:700; color:var(--navy-dark); margin:0;">Contact Info & Doctor Portal Login</h3>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="tel" name="phone" class="form-control" placeholder="e.g. 9000000005" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" name="email" class="form-control" placeholder="e.g. dr.ramesh@medicare.org">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Doctor Portal Username *</label>
+            <input type="text" name="username" class="form-control" placeholder="e.g. doctor205" required autocomplete="off">
+            <small style="font-size:11.5px; color:var(--text-muted); display:block; margin-top:3px;">
+              Used by the physician to sign into the Doctor Console.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Initial Password *</label>
+            <input type="password" name="password" class="form-control" placeholder="e.g. doctor123" required autocomplete="new-password">
+            <small style="font-size:11.5px; color:var(--text-muted); display:block; margin-top:3px;">
+              Hashed securely via bcrypt/werkzeug before saving to database.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit and Actions -->
+      <div style="display:flex; gap:12px; justify-content:flex-end; align-items:center; padding-top:16px; border-top:1px solid var(--border);">
+        <a class="btn btn-secondary" href="{{ url_for('dashboard') }}">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="padding:10px 24px; font-weight:700;">
+          + Onboard Doctor to Staff &rarr;
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

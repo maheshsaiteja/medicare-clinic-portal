@@ -160,7 +160,7 @@ def login_required(role=None):
         def wrapped(*args, **kwargs):
             if 'user_id' not in session:
                 flash('Please sign in to access your clinic portal.', 'info')
-                return redirect(url_for('login'))
+                return redirect(url_for('login', next=request.path))
             if role and session.get('role') != role and session.get('role') != 'admin':
                 flash('Access restricted: Insufficient permissions.', 'danger')
                 return redirect(url_for('dashboard'))
@@ -188,9 +188,13 @@ def healthz():
 
 @app.after_request
 def add_cache_headers(response):
-    """Cache static assets (CSS, JS, fonts, images) for 24 hours to maximize client speed."""
+    """Cache static assets for 24 hours while ensuring dynamic pages are always fresh from the SQL database."""
     if request.path.startswith('/static/'):
         response.headers['Cache-Control'] = 'public, max-age=86400'
+    else:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     return response
 
 # -----------------------------------------------------------------------------
@@ -206,7 +210,6 @@ def index():
             JOIN department dep ON d.DepartmentID = dep.DepartmentID
             ORDER BY d.DoctorID LIMIT 4
         """)
-        # Single combined query instead of 4 separate database roundtrips
         stats_row = query_db("""
             SELECT 
                 (SELECT COUNT(*) FROM patient) AS patients,
@@ -227,7 +230,10 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    next_url = request.args.get('next') or request.form.get('next')
     if 'user_id' in session:
+        if next_url and next_url.startswith('/'):
+            return redirect(next_url)
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
@@ -235,7 +241,6 @@ def login():
         password = request.form.get('password', '')
 
         try:
-            # Automatic role detection: find user by username directly without role dropdown
             user = query_db(
                 "SELECT * FROM users WHERE username = %s AND is_active = 1",
                 (username,),
@@ -248,22 +253,35 @@ def login():
 
                 if user['role'] == 'doctor':
                     doc = query_db("SELECT DoctorID, DoctorName FROM doctor WHERE UserID = %s", (user['user_id'],), one=True)
+                    if not doc:
+                        # Auto-link if doctor record with unlinked UserID exists
+                        doc = query_db("SELECT DoctorID, DoctorName FROM doctor WHERE Phone = %s AND UserID IS NULL", (user['username'],), one=True)
+                        if doc:
+                            query_db("UPDATE doctor SET UserID = %s WHERE DoctorID = %s", (user['user_id'], doc['DoctorID']), commit=True)
                     session['doctor_id'] = doc['DoctorID'] if doc else None
                     session['doctor_name'] = doc['DoctorName'] if doc else user['username']
+
                 elif user['role'] == 'patient':
                     pat = query_db("SELECT PatientID, PatientName FROM patient WHERE UserID = %s", (user['user_id'],), one=True)
+                    if not pat:
+                        # Auto-link by phone or email if patient visited OPD previously
+                        pat = query_db("SELECT PatientID, PatientName FROM patient WHERE (Phone = %s OR Email = %s) AND UserID IS NULL", (user['username'], user['username']), one=True)
+                        if pat:
+                            query_db("UPDATE patient SET UserID = %s WHERE PatientID = %s", (user['user_id'], pat['PatientID']), commit=True)
                     session['patient_id'] = pat['PatientID'] if pat else None
                     session['patient_name'] = pat['PatientName'] if pat else user['username']
 
                 displayName = session.get('doctor_name') or session.get('patient_name') or username
                 flash(f'Welcome back, {displayName}!', 'success')
+                if next_url and next_url.startswith('/'):
+                    return redirect(next_url)
                 return redirect(url_for('dashboard'))
             else:
                 flash('Invalid username or password. Please verify your credentials.', 'danger')
         except Exception as e:
             flash(f'Database error during sign-in: {str(e)}', 'danger')
 
-    return render_template('login.html')
+    return render_template('login.html', next_url=next_url)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -301,7 +319,6 @@ def register():
             )
 
             if role == 'doctor':
-                # Create doctor record
                 query_db(
                     """INSERT INTO doctor (DoctorName, Specialization, Phone, Email, DepartmentID, ConsultationFee, RoomNumber, UserID)
                        VALUES (%s, %s, %s, %s, 2, 500.00, 'Consultation Room', %s)""",
@@ -309,14 +326,28 @@ def register():
                     commit=True
                 )
             else:
-                # Create patient record
-                dob_val = dob if dob else '2000-01-01'
-                query_db(
-                    """INSERT INTO patient (PatientName, DOB, Gender, Phone, Email, BloodGroup, Address, UserID)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (name, dob_val, gender, phone, email or None, blood_group or None, address or None, user_id),
-                    commit=True
-                )
+                # Check if patient already exists by phone (e.g. from Emergency OPD)
+                existing_pat = query_db("SELECT PatientID, UserID FROM patient WHERE Phone = %s", (phone,), one=True)
+                if existing_pat:
+                    if existing_pat.get('UserID'):
+                        flash('A portal account already exists with this phone number. Please sign in.', 'warning')
+                        return redirect(url_for('login'))
+                    # Link existing OPD record to newly registered user
+                    query_db(
+                        """UPDATE patient 
+                           SET UserID = %s, PatientName = %s, Email = COALESCE(NULLIF(%s, ''), Email), Address = COALESCE(NULLIF(%s, ''), Address)
+                           WHERE PatientID = %s""",
+                        (user_id, name, email, address, existing_pat['PatientID']),
+                        commit=True
+                    )
+                else:
+                    dob_val = dob if dob else '2000-01-01'
+                    query_db(
+                        """INSERT INTO patient (PatientName, DOB, Gender, Phone, Email, BloodGroup, Address, UserID)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                        (name, dob_val, gender, phone, email or None, blood_group or None, address or None, user_id),
+                        commit=True
+                    )
 
             flash(f'Account created successfully as {role.capitalize()}! Please sign in with username: {username}', 'success')
             return redirect(url_for('login'))
@@ -340,19 +371,26 @@ def dashboard():
     role = session['role']
 
     # Tailor stats cards depending on role
-    if role == 'patient' and session.get('patient_id'):
+    if role == 'patient':
+        pat_id = session.get('patient_id') or 0
         stats = {
-            'appointments': query_db("SELECT COUNT(*) AS c FROM appointment WHERE PatientID = %s", (session['patient_id'],), one=True)['c'],
+            'appointments': query_db("""
+                SELECT COUNT(*) AS c FROM appointment a 
+                JOIN patient p ON a.PatientID = p.PatientID 
+                WHERE (p.UserID = %s OR a.PatientID = %s)
+            """, (session['user_id'], pat_id), one=True)['c'],
             'prescriptions': query_db("""
                 SELECT COUNT(*) AS c FROM prescription pr
                 JOIN appointment a ON pr.AppointmentID = a.AppointmentID
-                WHERE a.PatientID = %s
-            """, (session['patient_id'],), one=True)['c'],
+                JOIN patient p ON a.PatientID = p.PatientID
+                WHERE (p.UserID = %s OR a.PatientID = %s)
+            """, (session['user_id'], pat_id), one=True)['c'],
             'pending_bills': query_db("""
                 SELECT COUNT(*) AS c FROM bill b
                 JOIN appointment a ON b.AppointmentID = a.AppointmentID
-                WHERE a.PatientID = %s AND b.PaymentStatus = 'Pending'
-            """, (session['patient_id'],), one=True)['c'],
+                JOIN patient p ON a.PatientID = p.PatientID
+                WHERE (p.UserID = %s OR a.PatientID = %s) AND b.PaymentStatus = 'Pending'
+            """, (session['user_id'], pat_id), one=True)['c'],
             'doctors': query_db("SELECT COUNT(*) AS c FROM doctor", one=True)['c']
         }
     else:
@@ -367,7 +405,7 @@ def dashboard():
 
     if role == 'doctor' and session.get('doctor_id'):
         recent_appointments = query_db("""
-            SELECT a.AppointmentID, p.PatientName, p.Phone AS PatientPhone, a.AppointmentDate, a.Reason, a.Status,
+            SELECT a.AppointmentID, p.PatientName, p.Phone AS PatientPhone, a.AppointmentDate, a.Reason, a.Diagnosis, a.DoctorNotes, a.Status,
                    b.BillID, b.TotalAmount, b.PaymentStatus
             FROM appointment a
             JOIN patient p ON a.PatientID = p.PatientID
@@ -375,21 +413,23 @@ def dashboard():
             WHERE a.DoctorID = %s
             ORDER BY a.AppointmentDate DESC LIMIT 6
         """, (session['doctor_id'],))
-    elif role == 'patient' and session.get('patient_id'):
+    elif role == 'patient':
+        pat_id = session.get('patient_id') or 0
         recent_appointments = query_db("""
             SELECT a.AppointmentID, d.DoctorName, d.Specialization, dep.DepartmentName,
-                   a.AppointmentDate, a.Reason, a.Status, b.BillID, b.TotalAmount, b.PaymentStatus
+                   a.AppointmentDate, a.Reason, a.Diagnosis, a.DoctorNotes, a.Status, b.BillID, b.TotalAmount, b.PaymentStatus
             FROM appointment a
+            JOIN patient p ON a.PatientID = p.PatientID
             JOIN doctor d ON a.DoctorID = d.DoctorID
             JOIN department dep ON d.DepartmentID = dep.DepartmentID
             LEFT JOIN bill b ON a.AppointmentID = b.AppointmentID
-            WHERE a.PatientID = %s
+            WHERE (p.UserID = %s OR a.PatientID = %s)
             ORDER BY a.AppointmentDate DESC LIMIT 6
-        """, (session['patient_id'],))
+        """, (session['user_id'], pat_id))
     else: # Admin
         recent_appointments = query_db("""
             SELECT a.AppointmentID, p.PatientName, d.DoctorName, dep.DepartmentName,
-                   a.AppointmentDate, a.Status, b.BillID, b.TotalAmount, b.PaymentStatus
+                   a.AppointmentDate, a.Reason, a.Diagnosis, a.DoctorNotes, a.Status, b.BillID, b.TotalAmount, b.PaymentStatus
             FROM appointment a
             JOIN patient p ON a.PatientID = p.PatientID
             JOIN doctor d ON a.DoctorID = d.DoctorID
@@ -502,9 +542,9 @@ def add_doctor():
         dept_id = request.form.get('department_id')
         specialization = request.form.get('specialization', '').strip()
         qualifications = request.form.get('qualifications', 'MBBS, MD').strip()
-        fee = request.form.get('consultation_fee', '500').strip()
+        fee = request.form.get('consultation_fee', '600').strip()
         room = request.form.get('room_number', 'Cabin 101').strip()
-        available_days = request.form.get('available_days', 'Mon - Sat').strip()
+        available_days = request.form.get('available_days', 'Mon - Sat, 9 AM - 2 PM').strip()
         phone = request.form.get('phone', '').strip()
         email = request.form.get('email', '').strip()
         username = request.form.get('username', '').strip()
@@ -512,25 +552,25 @@ def add_doctor():
 
         if not all([name, dept_id, specialization, phone, username, password]):
             flash('Please complete all required fields (Name, Department, Specialization, Phone, Username, Password).', 'warning')
-            return redirect(url_for('dashboard') + '#doctorsSection')
+            return render_template('add_doctor.html', departments=departments)
 
         try:
-            fee_val = float(fee) if fee else 500.00
+            fee_val = float(fee) if fee else 600.00
         except ValueError:
-            fee_val = 500.00
+            fee_val = 600.00
 
         try:
             # Check unique username
             existing = query_db("SELECT user_id FROM users WHERE username = %s", (username,), one=True)
             if existing:
                 flash(f'Username "{username}" is already taken. Please choose another username.', 'danger')
-                return redirect(url_for('dashboard') + '#doctorsSection')
+                return render_template('add_doctor.html', departments=departments)
 
             # Check unique phone
             existing_phone = query_db("SELECT DoctorID FROM doctor WHERE Phone = %s", (phone,), one=True)
             if existing_phone:
                 flash(f'Phone number "{phone}" is already associated with another doctor.', 'danger')
-                return redirect(url_for('dashboard') + '#doctorsSection')
+                return render_template('add_doctor.html', departments=departments)
 
             # Create User record with role='doctor'
             hashed_pwd = generate_password_hash(password)
@@ -550,13 +590,113 @@ def add_doctor():
                 commit=True
             )
 
-            flash(f'Dr. {name} has been successfully added to the hospital staff! Login: {username}', 'success')
-            return redirect(url_for('dashboard'))
+            flash(f'Dr. {name} has been successfully added to staff! Portal Username: {username}', 'success')
+            return redirect(url_for('doctors'))
         except Exception as e:
             flash(f'Failed to add doctor: {str(e)}', 'danger')
-            return redirect(url_for('dashboard'))
+            return render_template('add_doctor.html', departments=departments)
 
-    return redirect(url_for('dashboard') + '#doctorsSection')
+    return render_template('add_doctor.html', departments=departments)
+
+
+# -----------------------------------------------------------------------------
+# EDIT DOCTOR (Admin Capability with SQL UPDATE)
+# -----------------------------------------------------------------------------
+@app.route('/doctors/<int:doctor_id>/edit', methods=['GET', 'POST'])
+@login_required('admin')
+def edit_doctor(doctor_id):
+    doctor = query_db("SELECT * FROM doctor WHERE DoctorID = %s", (doctor_id,), one=True)
+    if not doctor:
+        flash('Doctor record not found.', 'warning')
+        return redirect(url_for('doctors'))
+
+    departments = query_db("SELECT * FROM department ORDER BY DepartmentName")
+
+    if request.method == 'POST':
+        name = request.form.get('doctor_name', '').strip()
+        dept_id = request.form.get('department_id')
+        specialization = request.form.get('specialization', '').strip()
+        qualifications = request.form.get('qualifications', 'MBBS, MD').strip()
+        fee = request.form.get('consultation_fee', '600').strip()
+        room = request.form.get('room_number', 'Cabin 101').strip()
+        available_days = request.form.get('available_days', 'Mon - Sat').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+
+        if not all([name, dept_id, specialization, phone]):
+            flash('Doctor Name, Department, Specialization, and Phone are required.', 'warning')
+            return render_template('edit_doctor.html', doctor=doctor, departments=departments)
+
+        try:
+            fee_val = float(fee) if fee else 600.00
+        except ValueError:
+            fee_val = 600.00
+
+        try:
+            # Check phone uniqueness excluding current doctor
+            existing_phone = query_db("SELECT DoctorID FROM doctor WHERE Phone = %s AND DoctorID != %s", (phone, doctor_id), one=True)
+            if existing_phone:
+                flash(f'Phone number "{phone}" is already associated with another doctor.', 'danger')
+                return render_template('edit_doctor.html', doctor=doctor, departments=departments)
+
+            query_db("""
+                UPDATE doctor
+                SET DoctorName = %s,
+                    Specialization = %s,
+                    DepartmentID = %s,
+                    Qualifications = %s,
+                    ConsultationFee = %s,
+                    RoomNumber = %s,
+                    AvailableDays = %s,
+                    Phone = %s,
+                    Email = %s
+                WHERE DoctorID = %s
+            """, (name, specialization, dept_id, qualifications, fee_val, room, available_days, phone, email or None, doctor_id), commit=True)
+
+            flash(f'Dr. {name}\'s details have been successfully updated in SQL database!', 'success')
+            return redirect(url_for('doctors'))
+        except Exception as e:
+            flash(f'Failed to update doctor: {str(e)}', 'danger')
+            return render_template('edit_doctor.html', doctor=doctor, departments=departments)
+
+    return render_template('edit_doctor.html', doctor=doctor, departments=departments)
+
+
+# -----------------------------------------------------------------------------
+# DELETE DOCTOR (Admin Capability with SQL DELETE)
+# -----------------------------------------------------------------------------
+@app.route('/doctors/<int:doctor_id>/delete', methods=['POST'])
+@login_required('admin')
+def delete_doctor(doctor_id):
+    doc = query_db("SELECT * FROM doctor WHERE DoctorID = %s", (doctor_id,), one=True)
+    if not doc:
+        flash('Doctor record not found.', 'warning')
+        return redirect(url_for('doctors'))
+
+    doc_name = doc['DoctorName']
+    user_id = doc.get('UserID')
+
+    try:
+        # 1. Clean up associated appointments, prescriptions, and bills in SQL
+        appts = query_db("SELECT AppointmentID FROM appointment WHERE DoctorID = %s", (doctor_id,))
+        for a in appts:
+            aid = a['AppointmentID']
+            query_db("DELETE FROM prescription WHERE AppointmentID = %s", (aid,), commit=True)
+            query_db("DELETE FROM bill WHERE AppointmentID = %s", (aid,), commit=True)
+            query_db("DELETE FROM appointment WHERE AppointmentID = %s", (aid,), commit=True)
+
+        # 2. Delete doctor record from SQL
+        query_db("DELETE FROM doctor WHERE DoctorID = %s", (doctor_id,), commit=True)
+
+        # 3. Delete linked user login credentials if exists
+        if user_id:
+            query_db("DELETE FROM users WHERE user_id = %s", (user_id,), commit=True)
+
+        flash(f'Dr. {doc_name} and all related clinical records were deleted successfully from the SQL database.', 'success')
+    except Exception as e:
+        flash(f'Failed to delete doctor: {str(e)}', 'danger')
+
+    return redirect(url_for('doctors'))
 
 
 # -----------------------------------------------------------------------------
@@ -576,6 +716,29 @@ def departments():
         dept_rows = []
     return render_template('departments.html', departments=dept_rows)
 
+@app.route('/departments/add', methods=['POST'])
+@login_required('admin')
+def add_department():
+    dept_name = request.form.get('department_name', '').strip()
+    description = request.form.get('description', '').strip()
+    hod = request.form.get('head_of_department', '').strip()
+
+    if not dept_name:
+        flash('Department name is required.', 'warning')
+        return redirect(url_for('departments'))
+
+    try:
+        query_db(
+            "INSERT INTO department (DepartmentName, Description, HeadOfDepartment) VALUES (%s, %s, %s)",
+            (dept_name, description or 'Specialized medical department', hod or None),
+            commit=True
+        )
+        flash(f'Department "{dept_name}" added successfully to clinical master.', 'success')
+    except Exception as e:
+        flash(f'Failed to add department: {str(e)}', 'danger')
+
+    return redirect(url_for('departments'))
+
 # -----------------------------------------------------------------------------
 # CLINICAL SERVICES & OPD
 # -----------------------------------------------------------------------------
@@ -584,11 +747,118 @@ def services():
     return render_template('services.html')
 
 # -----------------------------------------------------------------------------
-# 24/7 EMERGENCY & TRIAGE
+# 24/7 EMERGENCY & TRIAGE (Direct OPD Booking Flow - No Login Required)
 # -----------------------------------------------------------------------------
 @app.route('/emergency')
 def emergency():
     return render_template('emergency.html')
+
+@app.route('/emergency/book', methods=['GET', 'POST'])
+def emergency_booking():
+    departments = query_db("SELECT * FROM department ORDER BY DepartmentName")
+    doctors = query_db("""
+        SELECT d.DoctorID, d.DoctorName, d.Specialization, d.ConsultationFee, d.RoomNumber, dep.DepartmentName, dep.DepartmentID
+        FROM doctor d
+        JOIN department dep ON d.DepartmentID = dep.DepartmentID
+        ORDER BY dep.DepartmentName, d.DoctorName
+    """)
+
+    logged_patient = None
+    if session.get('role') == 'patient' and session.get('user_id'):
+        logged_patient = query_db("SELECT * FROM patient WHERE UserID = %s", (session['user_id'],), one=True)
+        if not logged_patient and session.get('patient_id'):
+            logged_patient = query_db("SELECT * FROM patient WHERE PatientID = %s", (session['patient_id'],), one=True)
+
+    if request.method == 'POST':
+        name = request.form.get('patient_name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        dob = request.form.get('dob')
+        gender = request.form.get('gender', 'Male')
+        email = request.form.get('email', '').strip()
+        address = request.form.get('address', '').strip()
+        doctor_id = request.form.get('doctor_id')
+        appt_date = request.form.get('appointment_date')
+        reason = request.form.get('reason', 'Immediate OPD Consultation').strip()
+        symptoms = request.form.get('symptoms', '').strip()
+        is_urgent = request.form.get('is_urgent') == '1'
+
+        if not all([name, phone, doctor_id, appt_date]):
+            flash('Please complete all required fields (Patient Name, Mobile Number, Consulting Doctor, Date & Time).', 'warning')
+            return render_template('emergency_booking.html', departments=departments, doctors=doctors, patient=logged_patient)
+
+        clean_date = appt_date.replace('T', ' ')
+        if len(clean_date) == 16:
+            clean_date += ':00'
+
+        try:
+            # Check if patient exists by phone
+            existing_pat = query_db("SELECT * FROM patient WHERE Phone = %s", (phone,), one=True)
+            if existing_pat:
+                patient_id = existing_pat['PatientID']
+                if session.get('role') == 'patient' and session.get('user_id') and not existing_pat.get('UserID'):
+                    query_db("UPDATE patient SET UserID = %s WHERE PatientID = %s", (session['user_id'], patient_id), commit=True)
+                if email or address:
+                    query_db("UPDATE patient SET Email = COALESCE(NULLIF(%s, ''), Email), Address = COALESCE(NULLIF(%s, ''), Address) WHERE PatientID = %s",
+                             (email, address, patient_id), commit=True)
+            else:
+                dob_val = dob if dob else '2000-01-01'
+                user_id = session.get('user_id') if session.get('role') == 'patient' else None
+                patient_id = query_db(
+                    """INSERT INTO patient (PatientName, DOB, Gender, Phone, Email, Address, UserID)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                    (name, dob_val, gender, phone, email or None, address or None, user_id),
+                    commit=True
+                )
+
+            final_reason = f"[URGENT OPD] {reason}" if is_urgent and not reason.startswith('[URGENT') else reason
+
+            new_appt_id = query_db(
+                """INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, Reason, Symptoms, Status)
+                   VALUES (%s, %s, %s, %s, %s, 'Confirmed')""",
+                (patient_id, doctor_id, clean_date, final_reason, symptoms),
+                commit=True
+            )
+
+            # Ensure billing record exists
+            existing_bill = query_db("SELECT BillID FROM bill WHERE AppointmentID = %s", (new_appt_id,), one=True)
+            if not existing_bill:
+                doc = query_db("SELECT ConsultationFee FROM doctor WHERE DoctorID = %s", (doctor_id,), one=True)
+                fee = float(doc['ConsultationFee']) if doc else 500.00
+                tax = round(fee * 0.05, 2)
+                total = fee + tax
+                query_db(
+                    """INSERT INTO bill (AppointmentID, Amount, Tax, TotalAmount, PaymentStatus, PaymentMethod)
+                       VALUES (%s, %s, %s, %s, 'Pending', 'Pending')""",
+                    (new_appt_id, fee, tax, total),
+                    commit=True
+                )
+
+            return redirect(url_for('emergency_confirmation', appointment_id=new_appt_id))
+        except Exception as e:
+            flash(f'Immediate OPD booking error: {str(e)}', 'danger')
+
+    return render_template('emergency_booking.html', departments=departments, doctors=doctors, patient=logged_patient)
+
+@app.route('/emergency/confirmation/<int:appointment_id>')
+def emergency_confirmation(appointment_id):
+    appt = query_db("""
+        SELECT a.*, p.PatientName, p.Phone, p.Email, p.Gender,
+               d.DoctorName, d.Specialization, d.RoomNumber, d.ConsultationFee,
+               dep.DepartmentName,
+               b.BillID, b.Amount, b.Tax, b.TotalAmount, b.PaymentStatus
+        FROM appointment a
+        JOIN patient p ON a.PatientID = p.PatientID
+        JOIN doctor d ON a.DoctorID = d.DoctorID
+        JOIN department dep ON d.DepartmentID = dep.DepartmentID
+        LEFT JOIN bill b ON a.AppointmentID = b.AppointmentID
+        WHERE a.AppointmentID = %s
+    """, (appointment_id,), one=True)
+
+    if not appt:
+        flash('Appointment confirmation not found.', 'warning')
+        return redirect(url_for('index'))
+
+    return render_template('emergency_confirmation.html', appt=appt)
 
 # -----------------------------------------------------------------------------
 # APPOINTMENTS
@@ -614,8 +884,9 @@ def appointments():
     params = []
 
     if role == 'patient':
-        conditions.append("p.UserID = %s")
-        params.append(session['user_id'])
+        pat_id = session.get('patient_id') or 0
+        conditions.append("(p.UserID = %s OR a.PatientID = %s)")
+        params.extend([session['user_id'], pat_id])
     elif role == 'doctor' and session.get('doctor_id'):
         conditions.append("a.DoctorID = %s")
         params.append(session['doctor_id'])
@@ -635,6 +906,9 @@ def appointments():
 @login_required('patient')
 def new_appointment():
     patient = query_db("SELECT * FROM patient WHERE UserID = %s", (session['user_id'],), one=True)
+    if not patient and session.get('patient_id'):
+        patient = query_db("SELECT * FROM patient WHERE PatientID = %s", (session['patient_id'],), one=True)
+
     if not patient:
         flash('Patient record not found. Please complete your profile.', 'warning')
         return redirect(url_for('dashboard'))
@@ -656,7 +930,6 @@ def new_appointment():
             flash('Please select a doctor and appointment date.', 'warning')
             return render_template('new_appointment.html', patient=patient, doctors=doctors)
 
-        # Standardize datetime string from datetime-local input
         clean_date = appt_date.replace('T', ' ')
         if len(clean_date) == 16:
             clean_date += ':00'
@@ -693,41 +966,118 @@ def new_appointment():
 @app.route('/appointments/<int:appointment_id>/status', methods=['POST'])
 @login_required()
 def update_appointment_status(appointment_id):
+    role = session['role']
+    if role not in ('doctor', 'admin'):
+        flash('Access restricted: Insufficient permissions.', 'danger')
+        return redirect(url_for('appointments'))
+
     new_status = request.form.get('status')
     diagnosis = request.form.get('diagnosis', '').strip()
     doctor_notes = request.form.get('notes', '').strip()
+    reschedule_date = request.form.get('appointment_date', '').strip()
+
+    clean_date = None
+    if reschedule_date:
+        clean_date = reschedule_date.replace('T', ' ')
+        if len(clean_date) == 16:
+            clean_date += ':00'
 
     try:
-        if session['role'] == 'doctor':
+        if role == 'doctor':
+            doc_id = session.get('doctor_id')
+            if not doc_id:
+                flash('Doctor profile not linked.', 'danger')
+                return redirect(url_for('appointments'))
+
+            # Verify appointment belongs to this doctor
+            appt = query_db("SELECT AppointmentID FROM appointment WHERE AppointmentID = %s AND DoctorID = %s", (appointment_id, doc_id), one=True)
+            if not appt:
+                flash('Unauthorized: You can only update your assigned consultations.', 'danger')
+                return redirect(url_for('appointments'))
+
             query_db(
                 """UPDATE appointment 
-                   SET Status = %s, 
+                   SET Status = COALESCE(NULLIF(%s, ''), Status), 
                        Diagnosis = COALESCE(NULLIF(%s, ''), Diagnosis),
-                       DoctorNotes = COALESCE(NULLIF(%s, ''), DoctorNotes)
+                       DoctorNotes = COALESCE(NULLIF(%s, ''), DoctorNotes),
+                       AppointmentDate = COALESCE(NULLIF(%s, ''), AppointmentDate)
                    WHERE AppointmentID = %s AND DoctorID = %s""",
-                (new_status, diagnosis, doctor_notes, appointment_id, session.get('doctor_id')),
+                (new_status, diagnosis, doctor_notes, clean_date, appointment_id, doc_id),
                 commit=True
             )
-        elif session['role'] == 'admin':
+        elif role == 'admin':
             query_db(
-                "UPDATE appointment SET Status = %s WHERE AppointmentID = %s",
-                (new_status, appointment_id),
+                """UPDATE appointment 
+                   SET Status = COALESCE(NULLIF(%s, ''), Status),
+                       Diagnosis = COALESCE(NULLIF(%s, ''), Diagnosis),
+                       DoctorNotes = COALESCE(NULLIF(%s, ''), DoctorNotes),
+                       AppointmentDate = COALESCE(NULLIF(%s, ''), AppointmentDate)
+                   WHERE AppointmentID = %s""",
+                (new_status, diagnosis, doctor_notes, clean_date, appointment_id),
                 commit=True
             )
-        flash(f'Appointment #{appointment_id} updated to {new_status}.', 'success')
+        flash(f'Appointment #{appointment_id} updated successfully in database.', 'success')
     except Exception as e:
         flash(f'Error updating appointment: {str(e)}', 'danger')
+
+    return redirect(url_for('appointments'))
+
+@app.route('/appointments/<int:appointment_id>/cancel', methods=['POST'])
+@login_required()
+def cancel_appointment(appointment_id):
+    role = session['role']
+    try:
+        if role == 'patient':
+            pat_id = session.get('patient_id') or 0
+            appt = query_db(
+                """SELECT a.* FROM appointment a
+                   JOIN patient p ON a.PatientID = p.PatientID
+                   WHERE a.AppointmentID = %s AND (p.UserID = %s OR a.PatientID = %s)""",
+                (appointment_id, session['user_id'], pat_id),
+                one=True
+            )
+            if not appt:
+                flash('Appointment not found or unauthorized.', 'danger')
+                return redirect(url_for('appointments'))
+            if appt['Status'] == 'Completed':
+                flash('Completed consultations cannot be cancelled.', 'warning')
+                return redirect(url_for('appointments'))
+            query_db("UPDATE appointment SET Status = 'Cancelled' WHERE AppointmentID = %s", (appointment_id,), commit=True)
+            flash(f'Consultation #{appointment_id} has been cancelled.', 'info')
+        else: # doctor or admin
+            if role == 'doctor':
+                doc_id = session.get('doctor_id')
+                appt = query_db("SELECT AppointmentID FROM appointment WHERE AppointmentID = %s AND DoctorID = %s", (appointment_id, doc_id), one=True)
+                if not appt:
+                    flash('Unauthorized: You can only cancel your assigned consultations.', 'danger')
+                    return redirect(url_for('appointments'))
+            query_db("UPDATE appointment SET Status = 'Cancelled' WHERE AppointmentID = %s", (appointment_id,), commit=True)
+            flash(f'Appointment #{appointment_id} has been marked as Cancelled.', 'info')
+    except Exception as e:
+        flash(f'Failed to cancel appointment: {str(e)}', 'danger')
 
     return redirect(url_for('appointments'))
 
 @app.route('/appointments/<int:appointment_id>/prescribe', methods=['POST'])
 @login_required('doctor')
 def add_prescription(appointment_id):
+    doc_id = session.get('doctor_id')
+    if not doc_id:
+        flash('Doctor profile not found.', 'danger')
+        return redirect(url_for('appointments'))
+
+    # Verify authorization: doctor can only prescribe for their own appointments
+    appt = query_db("SELECT AppointmentID FROM appointment WHERE AppointmentID = %s AND DoctorID = %s", (appointment_id, doc_id), one=True)
+    if not appt:
+        flash('Unauthorized: You can only prescribe for your assigned consultations.', 'danger')
+        return redirect(url_for('appointments'))
+
     medicine = request.form.get('medicine', '').strip()
     dosage = request.form.get('dosage', '').strip()
     duration = request.form.get('duration', '').strip()
     instructions = request.form.get('instructions', 'Take after meals').strip()
     diagnosis = request.form.get('diagnosis', '').strip()
+    doctor_notes = request.form.get('notes', '').strip()
 
     if not medicine or not dosage or not duration:
         flash('Medicine name, dosage, and duration are required.', 'warning')
@@ -740,17 +1090,21 @@ def add_prescription(appointment_id):
             (appointment_id, medicine, dosage, duration, instructions),
             commit=True
         )
-        if diagnosis:
-            query_db(
-                "UPDATE appointment SET Diagnosis = %s, Status = 'Completed' WHERE AppointmentID = %s",
-                (diagnosis, appointment_id),
-                commit=True
-            )
-        flash('Prescription added successfully.', 'success')
+        # Update diagnosis, notes, and mark completed in SQL
+        query_db(
+            """UPDATE appointment 
+               SET Status = 'Completed',
+                   Diagnosis = COALESCE(NULLIF(%s, ''), Diagnosis),
+                   DoctorNotes = COALESCE(NULLIF(%s, ''), DoctorNotes)
+               WHERE AppointmentID = %s""",
+            (diagnosis, doctor_notes, appointment_id),
+            commit=True
+        )
+        flash(f'Prescription issued and Consultation #{appointment_id} marked as Completed!', 'success')
     except Exception as e:
         flash(f'Failed to add prescription: {str(e)}', 'danger')
 
-    return redirect(url_for('prescriptions'))
+    return redirect(url_for('appointments'))
 
 # -----------------------------------------------------------------------------
 # PRESCRIPTIONS
@@ -759,10 +1113,10 @@ def add_prescription(appointment_id):
 @login_required()
 def prescriptions():
     role = session['role']
-    # Always include DoctorName, Specialization, and PatientName for full transparency
     if role == 'patient':
+        pat_id = session.get('patient_id') or 0
         items = query_db("""
-            SELECT pr.*, a.AppointmentDate, a.Diagnosis, 
+            SELECT pr.*, a.AppointmentDate, a.Diagnosis, a.DoctorNotes,
                    p.PatientName, p.Phone AS PatientPhone,
                    d.DoctorName, d.Specialization, dep.DepartmentName
             FROM prescription pr
@@ -770,12 +1124,12 @@ def prescriptions():
             JOIN patient p ON a.PatientID = p.PatientID
             JOIN doctor d ON a.DoctorID = d.DoctorID
             JOIN department dep ON d.DepartmentID = dep.DepartmentID
-            WHERE p.UserID = %s
+            WHERE (p.UserID = %s OR a.PatientID = %s)
             ORDER BY pr.PrescriptionID DESC
-        """, (session['user_id'],))
+        """, (session['user_id'], pat_id))
     elif role == 'doctor':
         items = query_db("""
-            SELECT pr.*, a.AppointmentDate, a.Diagnosis, 
+            SELECT pr.*, a.AppointmentDate, a.Diagnosis, a.DoctorNotes,
                    p.PatientName, p.Phone AS PatientPhone,
                    d.DoctorName, d.Specialization, dep.DepartmentName
             FROM prescription pr
@@ -788,7 +1142,7 @@ def prescriptions():
         """, (session.get('doctor_id'),))
     else: # Admin
         items = query_db("""
-            SELECT pr.*, a.AppointmentDate, a.Diagnosis, 
+            SELECT pr.*, a.AppointmentDate, a.Diagnosis, a.DoctorNotes,
                    p.PatientName, p.Phone AS PatientPhone,
                    d.DoctorName, d.Specialization, dep.DepartmentName
             FROM prescription pr
@@ -822,8 +1176,9 @@ def bills():
     params = []
 
     if role == 'patient':
-        conditions.append("p.UserID = %s")
-        params.append(session['user_id'])
+        pat_id = session.get('patient_id') or 0
+        conditions.append("(p.UserID = %s OR a.PatientID = %s)")
+        params.extend([session['user_id'], pat_id])
 
     if status_filter:
         conditions.append("b.PaymentStatus = %s")
@@ -840,6 +1195,22 @@ def bills():
 @login_required()
 def pay_bill(bill_id):
     payment_method = request.form.get('payment_method', 'UPI')
+    role = session['role']
+
+    # Security check: verify bill ownership if patient
+    if role == 'patient':
+        pat_id = session.get('patient_id') or 0
+        bill_check = query_db("""
+            SELECT b.BillID 
+            FROM bill b 
+            JOIN appointment a ON b.AppointmentID = a.AppointmentID
+            JOIN patient p ON a.PatientID = p.PatientID
+            WHERE b.BillID = %s AND (p.UserID = %s OR a.PatientID = %s)
+        """, (bill_id, session['user_id'], pat_id), one=True)
+        if not bill_check:
+            flash('Unauthorized: You can only settle your own invoices.', 'danger')
+            return redirect(url_for('bills'))
+
     try:
         paid_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         query_db(
@@ -859,7 +1230,7 @@ def pay_bill(bill_id):
 @login_required()
 def invoice(bill_id):
     bill_data = query_db("""
-        SELECT b.*, a.AppointmentID, a.AppointmentDate, a.Reason, a.Diagnosis,
+        SELECT b.*, a.AppointmentID, a.AppointmentDate, a.Reason, a.Diagnosis, a.DoctorNotes,
                p.PatientID, p.PatientName, p.Phone, p.Email, p.Address,
                d.DoctorID, d.DoctorName, d.Specialization, d.RoomNumber,
                dep.DepartmentName
@@ -875,12 +1246,14 @@ def invoice(bill_id):
         flash('Invoice not found.', 'danger')
         return redirect(url_for('bills'))
 
-    # If patient, verify ownership
+    # Security check: Patient can only view their own invoice
     if session['role'] == 'patient':
-        pat = query_db("SELECT PatientID FROM patient WHERE UserID = %s", (session['user_id'],), one=True)
-        if not pat or pat['PatientID'] != bill_data['PatientID']:
-            flash('Access denied.', 'danger')
-            return redirect(url_for('bills'))
+        pat_id = session.get('patient_id') or 0
+        if bill_data['PatientID'] != pat_id:
+            chk = query_db("SELECT PatientID FROM patient WHERE UserID = %s AND PatientID = %s", (session['user_id'], bill_data['PatientID']), one=True)
+            if not chk:
+                flash('Access denied.', 'danger')
+                return redirect(url_for('bills'))
 
     prescriptions_list = query_db("""
         SELECT * FROM prescription WHERE AppointmentID = %s
@@ -889,10 +1262,10 @@ def invoice(bill_id):
     return render_template('invoice.html', bill=bill_data, prescriptions=prescriptions_list)
 
 # -----------------------------------------------------------------------------
-# CLINIC ANALYTICS & EXECUTIVE REPORTING
+# CLINIC ANALYTICS & EXECUTIVE REPORTING (Admin Only)
 # -----------------------------------------------------------------------------
 @app.route('/analytics')
-@login_required()
+@login_required('admin')
 def analytics():
     dept_stats = query_db("""
         SELECT dep.DepartmentName,

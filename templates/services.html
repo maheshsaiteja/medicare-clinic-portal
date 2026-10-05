@@ -41,7 +41,7 @@
       Doctors generate electronic prescriptions with exact dosage, frequency, course duration, and clinical instructions directly stored in the patient's portal.
     </p>
     <div style="margin-top:16px;">
-      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:var(--teal);">Access Pharmacy Portal &rarr;</a>
+      <a href="{{ url_for('prescriptions') if session.get('user_id') else url_for('login') }}" style="font-size:13px; font-weight:700; color:var(--teal);">Access Pharmacy Portal &rarr;</a>
     </div>
   </div>
 
@@ -55,7 +55,7 @@
       Automated billing trigger generates transparent, itemized invoices with 5% GST calculation. Multi-channel settlement supported: UPI, Card, Cash, &amp; Insurance.
     </p>
     <div style="margin-top:16px;">
-      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:#d97706;">View Billing System &rarr;</a>
+      <a href="{{ url_for('bills') if session.get('user_id') else url_for('login') }}" style="font-size:13px; font-weight:700; color:#d97706;">View Billing System &rarr;</a>
     </div>
   </div>
 

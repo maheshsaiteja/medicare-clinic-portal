@@ -62,14 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// 4. Global Modal Handlers for Doctor Onboarding
+// 4. Global Fallback Handlers for Doctor Onboarding
 window.openAddDoctorModal = function() {
-  const modal = document.getElementById('addDoctorModal');
-  if (modal) {
-    modal.classList.add('active');
-  } else {
-    window.location.href = '/dashboard#addDoctorModal';
-  }
+  window.location.href = '/doctors/add';
 };
 
 window.closeAddDoctorModal = function() {

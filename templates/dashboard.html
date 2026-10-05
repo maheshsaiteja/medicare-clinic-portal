@@ -11,7 +11,7 @@
       {% else %}AD{% endif %}
     </div>
     <div>
-      <div class="live-indicator" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.3); color:#38bdf8; margin-bottom:6px;">
+      <div class="dash-command-badge">
         <span class="pulse-dot"></span>
         {{ session.get('role')|upper }} COMMAND WORKSPACE
       </div>
@@ -26,37 +26,39 @@
         <span>&#128197; <span id="dashLiveDate"></span></span>
         <span>&bull;</span>
         <span>&#128337; <span id="dashLiveClock"></span> IST</span>
-        <span>&bull;</span>
-        <span style="color:#34d399; font-weight:700;">● System Online</span>
       </div>
     </div>
   </div>
 
   <div class="quick-actions-bar">
     {% if session.get('role') == 'admin' %}
-      <button type="button" class="btn btn-primary" onclick="openAddDoctorModal()" style="display:inline-flex; align-items:center; gap:6px;">
+      <a class="btn btn-primary" href="{{ url_for('add_doctor') }}" id="btnAddNewDoctor">
         + Add New Doctor
-      </button>
-      <a class="btn btn-secondary" href="{{ url_for('patients') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('patients') }}">
         Patient Directory
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('analytics') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+      <a class="btn btn-secondary" href="{{ url_for('analytics') }}">
         Financial Analytics
       </a>
     {% elif session.get('role') == 'doctor' %}
-      <a class="btn btn-primary" href="{{ url_for('appointments') }}">My OPD Schedule</a>
-      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+      <a class="btn btn-primary" href="{{ url_for('appointments') }}">
+        My OPD Schedule
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}">
         Issued Prescriptions
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('patients') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+      <a class="btn btn-secondary" href="{{ url_for('patients') }}">
         Patient Records
       </a>
     {% else %}
-      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book Consultation</a>
-      <a class="btn btn-secondary" href="{{ url_for('bills') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">
+        + Book Consultation
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('bills') }}">
         My Invoices
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}">
         Pharmacy Rx
       </a>
     {% endif %}
@@ -182,9 +184,9 @@
         Manage certified physicians, department assignments, room locations, and consultation fees.
       </p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddDoctorModal()" style="display:inline-flex; align-items:center; gap:6px;">
+    <a class="btn btn-primary btn-sm" href="{{ url_for('add_doctor') }}" style="display:inline-flex; align-items:center; gap:6px;">
       + Add New Doctor
-    </button>
+    </a>
   </div>
 
   <div class="table-responsive">
@@ -210,7 +212,7 @@
               <strong>{{ doc.DoctorName }}</strong>
             </div>
           </td>
-          <td><span class="badge" style="background:#e0f2fe; color:#0284c7;">{{ doc.DepartmentName }}</span></td>
+          <td><span class="badge" style="background:#f1f5f9; color:var(--text-body);">{{ doc.DepartmentName }}</span></td>
           <td>{{ doc.Specialization }} <small style="color:var(--text-muted);">({{ doc.Qualifications }})</small></td>
           <td><strong style="color:var(--text-title);">₹{{ '%.2f'|format(doc.ConsultationFee) }}</strong></td>
           <td>{{ doc.RoomNumber }}</td>
@@ -239,7 +241,6 @@
     </div>
 
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <!-- Interactive Filter Tabs -->
       <div class="filter-tabs">
         <button type="button" class="filter-tab-btn active" data-filter="all">All Visits</button>
         <button type="button" class="filter-tab-btn" data-filter="confirmed">Confirmed</button>
@@ -247,7 +248,6 @@
         <button type="button" class="filter-tab-btn" data-filter="completed">Completed</button>
       </div>
 
-      <!-- Real-time Live Search Input -->
       <div style="position:relative;">
         <input type="text" id="tableSearchInput" class="form-control" style="padding:7px 12px 7px 32px; font-size:13px; width:220px; border-radius:var(--radius-sm);" placeholder="Search patient, doctor...">
         <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.5; font-size:12px;">&#128269;</span>
@@ -270,7 +270,7 @@
             <th>Specialty</th>
           {% endif %}
           <th>Date &amp; Time</th>
-          <th>Consultation Reason</th>
+          <th>Consultation Reason &amp; Clinical Notes</th>
           <th>Status</th>
           <th>Bill Status</th>
           <th>Actions</th>
@@ -293,7 +293,15 @@
             <td><span class="badge" style="background:#f1f5f9; color:var(--text-body);">{{ appt.DepartmentName }}</span></td>
           {% endif %}
           <td>{{ appt.AppointmentDate|clean_date }}</td>
-          <td>{{ appt.Reason or 'General Consultation' }}</td>
+          <td>
+            <div>{{ appt.Reason or 'General Consultation' }}</div>
+            {% if appt.Diagnosis %}
+              <small style="color:var(--teal); font-weight:700; display:block; margin-top:2px;">&#10004; Diagnosis: {{ appt.Diagnosis }}</small>
+            {% endif %}
+            {% if appt.DoctorNotes %}
+              <small style="color:var(--text-muted); display:block; font-size:11.5px; margin-top:1px;">Advice: {{ appt.DoctorNotes }}</small>
+            {% endif %}
+          </td>
           <td>
             <span class="badge badge-{{ appt.Status|lower }}">{{ appt.Status }}</span>
           </td>
@@ -322,90 +330,7 @@
   </div>
 </section>
 
-<!-- Add Doctor Modal (Admin Only) -->
-{% if session.get('role') == 'admin' %}
-<div class="modal-overlay" id="addDoctorModal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div>
-        <div class="page-eyebrow">HOSPITAL ONBOARDING</div>
-        <h3 style="font-size:20px; font-weight:800; color:var(--navy-dark); margin-top:2px;">Add New Doctor to Staff</h3>
-      </div>
-      <button type="button" onclick="closeAddDoctorModal()" style="border:none; background:none; font-size:24px; cursor:pointer; color:var(--text-muted); line-height:1;">&times;</button>
-    </div>
-
-    <form method="post" action="{{ url_for('add_doctor') }}">
-      <div class="modal-body" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-        <div class="form-group" style="grid-column:1 / -1;">
-          <label class="form-label">Doctor Full Name *</label>
-          <input type="text" name="doctor_name" class="form-control" placeholder="e.g. Dr. Ramesh Chander" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Department *</label>
-          <select name="department_id" class="form-control" required>
-            {% for dep in departments %}
-              <option value="{{ dep.DepartmentID }}">{{ dep.DepartmentName }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Specialization *</label>
-          <input type="text" name="specialization" class="form-control" placeholder="e.g. Senior Cardiologist" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Qualifications</label>
-          <input type="text" name="qualifications" class="form-control" placeholder="e.g. MBBS, MD, DM" value="MBBS, MD">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Consultation Fee (₹) *</label>
-          <input type="number" step="50" name="consultation_fee" class="form-control" value="600" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Cabin / Room Number</label>
-          <input type="text" name="room_number" class="form-control" placeholder="e.g. Cabin 204" value="Cabin 204">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Available Days / Timings</label>
-          <input type="text" name="available_days" class="form-control" placeholder="e.g. Mon - Sat, 9 AM - 2 PM" value="Mon - Sat, 9 AM - 2 PM">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Phone Number *</label>
-          <input type="tel" name="phone" class="form-control" placeholder="e.g. 9000000005" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" name="email" class="form-control" placeholder="e.g. dr.ramesh@clinic.org">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Doctor Portal Username *</label>
-          <input type="text" name="username" class="form-control" placeholder="e.g. doctor205" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Portal Password *</label>
-          <input type="password" name="password" class="form-control" placeholder="e.g. doctor123" required>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeAddDoctorModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">+ Onboard Doctor &rarr;</button>
-      </div>
-    </form>
-  </div>
-</div>
-{% endif %}
-
-<!-- Dashboard Live Clock, Filter Tabs & Modal Script -->
+<!-- Dashboard Live Clock & Filter Tabs Script -->
 <script>
   // 1. Live Indian Standard Time Clock
   function updateLiveClock() {
@@ -437,28 +362,6 @@
         }
       });
     });
-  });
-
-  // 3. Add Doctor Modal Handlers
-  function openAddDoctorModal() {
-    const modal = document.getElementById('addDoctorModal');
-    if (modal) {
-      modal.classList.add('active');
-    }
-  }
-
-  function closeAddDoctorModal() {
-    const modal = document.getElementById('addDoctorModal');
-    if (modal) {
-      modal.classList.remove('active');
-    }
-  }
-
-  window.addEventListener('click', (e) => {
-    const modal = document.getElementById('addDoctorModal');
-    if (modal && e.target === modal) {
-      closeAddDoctorModal();
-    }
   });
 </script>
 {% endblock %}
