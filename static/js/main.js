@@ -16,14 +16,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const userInput = document.querySelector('input[name="username"]');
       const passInput = document.querySelector('input[name="password"]');
 
-      if (roleSelect && userInput && passInput) {
-        roleSelect.value = role;
+      if (userInput && passInput) {
+        if (roleSelect && role) {
+          roleSelect.value = role;
+        }
         userInput.value = username;
         passInput.value = password;
         
         // Highlight active button
-        demoButtons.forEach(b => b.style.borderColor = '#cbd5e1');
-        btn.style.borderColor = '#0284c7';
+        demoButtons.forEach(b => {
+          b.style.borderColor = 'var(--border)';
+          b.style.background = '#fff';
+          b.style.color = 'var(--text-body)';
+        });
+        btn.style.borderColor = 'var(--primary)';
+        btn.style.background = 'var(--primary-light)';
+        btn.style.color = 'var(--primary)';
       }
     });
   });

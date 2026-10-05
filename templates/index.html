@@ -2,15 +2,35 @@
 {% block title %}MediCare+ | Modern Clinic Management & Healthcare Portal{% endblock %}
 
 {% block content %}
+<!-- Live Hospital & OPD Status Ticker -->
+<div class="lobby-live-ticker">
+  <div class="lobby-ticker-items">
+    <div class="lobby-ticker-item">
+      <span class="ticker-dot"></span>
+      <span style="color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">OPD Desk: Active</span>
+    </div>
+    <div class="lobby-ticker-item">
+      <span>&#128337; <strong>Consultations:</strong> Mon &ndash; Sat, 8:00 AM &ndash; 8:00 PM</span>
+    </div>
+    <div class="lobby-ticker-item">
+      <span>&#9201; <strong>Live Wait Time:</strong> ~5 Mins</span>
+    </div>
+  </div>
+  <div class="lobby-ticker-item">
+    <span>&#128222; <strong>24/7 Emergency Triage:</strong> <a href="tel:+919000000001" style="color:#38bdf8; font-weight:700; text-decoration:underline;">+91 90000 00001</a></span>
+  </div>
+</div>
+
+<!-- Main Hero Showcase -->
 <section class="hero-section">
   <div class="hero-content">
     <div class="live-indicator">
       <span class="pulse-dot"></span>
-      CLINICAL OPD & EMERGENCY PORTAL &bull; ACTIVE
+      CLINICAL OPD & EMERGENCY PORTAL &bull; 24/7 READY
     </div>
     <h1>Modern healthcare,<br><span class="highlight">compassionate excellence.</span></h1>
     <p class="hero-lead">
-      MediCare+ connects patients with board-certified clinical specialists, instant appointment scheduling, digital prescriptions, and transparent paperless billing.
+      MediCare+ connects patients with board-certified clinical specialists, real-time appointment scheduling, verified e-prescriptions, and transparent paperless billing.
     </p>
 
     <div class="hero-actions">
@@ -25,11 +45,11 @@
 
     <!-- Trust Badges Strip -->
     <div style="display:flex; gap:16px; margin-top:28px; flex-wrap:wrap; font-size:12.5px; color:var(--text-muted); font-weight:600;">
-      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:#f59e0b;">★ 4.9/5</strong> Patient Rating</span>
+      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:#f59e0b;">★ 4.9/5</strong> Patient Satisfaction</span>
       <span>&bull;</span>
-      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:var(--emerald);">100%</strong> Board Certified</span>
+      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:var(--emerald);">100%</strong> Board Certified Specialists</span>
       <span>&bull;</span>
-      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:var(--primary);">Zero-Wait</strong> Digital OPD</span>
+      <span style="display:flex; align-items:center; gap:5px;"><strong style="color:var(--primary);">Instant</strong> Digital Records</span>
     </div>
   </div>
 
@@ -40,20 +60,20 @@
         <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">HOSPITAL OPD & CLINICAL CARE</span>
         <h3 style="margin-top:4px;">Emergency & OPD Desk</h3>
       </div>
-      <div style="background:linear-gradient(135deg, #0284c7, #0d9488); width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:24px; box-shadow:0 6px 16px rgba(2, 132, 199, 0.4); color:#fff;">+</div>
+      <div style="background:linear-gradient(135deg, #0284c7, #0d9488); width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:26px; box-shadow:0 6px 16px rgba(2, 132, 199, 0.4); color:#fff;">+</div>
     </div>
     <p>
-      Multi-specialty outpatient consultations, on-site diagnostics, digital pharmacy, and emergency medical triage available 6 days a week.
+      Multi-specialty outpatient consultations, on-site digital pharmacy, automated invoicing with GST, and rapid emergency triage.
     </p>
 
     <div class="sql-features-list" style="margin-top:20px; padding-top:16px;">
-      <div class="sql-badge">&#128337; <span><strong>OPD Hours:</strong> Mon &ndash; Sat, 8:00 AM &ndash; 8:00 PM</span></div>
-      <div class="sql-badge">&#128222; <span><strong>24/7 Helpline:</strong> <a href="tel:+919000000001" style="color:#38bdf8; font-weight:700; text-decoration:underline;">+91 90000 00001</a></span></div>
-      <div class="sql-badge">&#128138; <span><strong>Digital Pharmacy:</strong> Instant verified Rx generation</span></div>
-      <div class="sql-badge">&#127973; <span><strong>Specialties:</strong> Cardiology, Dermatology, Pediatrics, General Care</span></div>
+      <div class="sql-badge">&#128337; <span><strong>OPD Timings:</strong> 8:00 AM &ndash; 8:00 PM Daily</span></div>
+      <div class="sql-badge">&#128138; <span><strong>Digital Pharmacy:</strong> Instant verified Rx issuance</span></div>
+      <div class="sql-badge">&#127973; <span><strong>Departments:</strong> Cardiology, Dermatology, Pediatrics, General Medicine</span></div>
+      <div class="sql-badge">&#128179; <span><strong>Cashless Billing:</strong> UPI, Card, Cash, & Insurance Support</span></div>
     </div>
 
-    <div style="margin-top:22px;">
+    <div style="margin-top:24px;">
       {% if session.get('role') == 'patient' %}
         <a class="btn btn-primary btn-block" href="{{ url_for('new_appointment') }}">Book Doctor Consultation &rarr;</a>
       {% else %}
@@ -67,7 +87,7 @@
 <div class="stats-grid">
   <a href="{{ url_for('patients') if session.get('user_id') else url_for('login') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Patients Directory">
     <div class="stat-info">
-      <span>Total Patients</span>
+      <span>Total Registered Patients</span>
       <b>{{ stats.patients }}</b>
       <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:4px;">View Directory &rarr;</small>
     </div>
@@ -85,7 +105,7 @@
 
   <a href="{{ url_for('appointments') if session.get('user_id') else url_for('login') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Consultations">
     <div class="stat-info">
-      <span>Consultations</span>
+      <span>Total Consultations</span>
       <b>{{ stats.appointments }}</b>
       <small style="color:#6366f1; font-size:11.5px; font-weight:600; display:block; margin-top:4px;">View Schedule &rarr;</small>
     </div>
@@ -94,7 +114,7 @@
 
   <a href="{{ url_for('doctors') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Medical Specialties">
     <div class="stat-info">
-      <span>Specialties</span>
+      <span>Clinical Specialties</span>
       <b>{{ stats.departments }}</b>
       <small style="color:#d97706; font-size:11.5px; font-weight:600; display:block; margin-top:4px;">Explore Clinics &rarr;</small>
     </div>
@@ -102,14 +122,96 @@
   </a>
 </div>
 
+<!-- FastPass 1-Click Role Portals (Showcasing Capabilities) -->
+<section style="margin-bottom: 32px;">
+  <div style="text-align:center; max-width:680px; margin: 0 auto 24px auto;">
+    <div class="page-eyebrow">INTEGRATED HEALTHCARE ECOSYSTEM</div>
+    <h2 style="font-size: 26px; color: var(--navy-dark); font-weight: 800;">Choose Your Dedicated Workspace</h2>
+    <p style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">
+      Engineered for distinct clinical roles with tailor-made workflows for patients, medical consultants, and hospital administration.
+    </p>
+  </div>
+
+  <div class="fastpass-grid">
+    <!-- Patient Card -->
+    <div class="fastpass-card">
+      <div>
+        <div class="fastpass-icon-badge" style="background:#e0f2fe; color:#0284c7;">&#128100;</div>
+        <h3 style="font-size: 19px; color: var(--text-title); margin-bottom: 8px;">Patient Portal</h3>
+        <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6;">
+          Schedule appointments, consult certified specialists, review active digital prescriptions, and settle invoices with GST receipts.
+        </p>
+        <ul style="list-style:none; padding:0; margin-top:14px; font-size:12.5px; color:var(--text-body); display:grid; gap:6px;">
+          <li>&#10004; Instant consultation booking</li>
+          <li>&#10004; Verified digital pharmacy Rx</li>
+          <li>&#10004; Itemized billing with UPI & Card</li>
+        </ul>
+      </div>
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+        {% if session.get('role') == 'patient' %}
+          <a class="btn btn-primary btn-sm btn-block" href="{{ url_for('dashboard') }}">Open Patient Workspace &rarr;</a>
+        {% else %}
+          <a class="btn btn-primary btn-sm btn-block" href="{{ url_for('login') }}">Access Patient Portal &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Doctor Card -->
+    <div class="fastpass-card">
+      <div>
+        <div class="fastpass-icon-badge" style="background:#ccfbf1; color:#0d9488;">&#9877;&#65039;</div>
+        <h3 style="font-size: 19px; color: var(--text-title); margin-bottom: 8px;">Doctor Console</h3>
+        <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6;">
+          Real-time patient queue, clinical diagnosis recording, electronic prescriptions with dosage/duration, and consultation history.
+        </p>
+        <ul style="list-style:none; padding:0; margin-top:14px; font-size:12.5px; color:var(--text-body); display:grid; gap:6px;">
+          <li>&#10004; Real-time OPD schedule management</li>
+          <li>&#10004; 1-click clinical notes & diagnosis</li>
+          <li>&#10004; Automated prescription generation</li>
+        </ul>
+      </div>
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+        {% if session.get('role') == 'doctor' %}
+          <a class="btn btn-teal btn-sm btn-block" href="{{ url_for('dashboard') }}">Open Doctor Console &rarr;</a>
+        {% else %}
+          <a class="btn btn-secondary btn-sm btn-block" href="{{ url_for('login') }}">Doctor Sign In &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Admin Card -->
+    <div class="fastpass-card">
+      <div>
+        <div class="fastpass-icon-badge" style="background:#e0e7ff; color:#6366f1;">&#128202;</div>
+        <h3 style="font-size: 19px; color: var(--text-title); margin-bottom: 8px;">Executive Administration</h3>
+        <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6;">
+          Hospital financial audit, collected vs outstanding dues, doctor patient loads, data integrity, and analytical reports.
+        </p>
+        <ul style="list-style:none; padding:0; margin-top:14px; font-size:12.5px; color:var(--text-body); display:grid; gap:6px;">
+          <li>&#10004; Financial revenue & cashflow audits</li>
+          <li>&#10004; Complete patient & doctor registry</li>
+          <li>&#10004; 3NF relational data integrity</li>
+        </ul>
+      </div>
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+        {% if session.get('role') == 'admin' %}
+          <a class="btn btn-primary btn-sm btn-block" href="{{ url_for('dashboard') }}" style="background:#4f46e5; border-color:#4f46e5;">Open Admin Desk &rarr;</a>
+        {% else %}
+          <a class="btn btn-secondary btn-sm btn-block" href="{{ url_for('login') }}">Admin Workspace &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- Featured Doctors Section -->
 {% if featured_doctors %}
 <section class="panel">
   <div class="panel-header">
     <div>
-      <div class="page-eyebrow">OUR SPECIALISTS</div>
-      <h2 class="panel-title">Available Doctors & Consultants</h2>
-      <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Top-rated medical consultants on active clinical duty</p>
+      <div class="page-eyebrow">OUR CLINICAL CONSULTANTS</div>
+      <h2 class="panel-title">Active Doctors on Duty Today</h2>
+      <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Board-certified medical specialists available for consultation</p>
     </div>
     <a class="btn btn-outline btn-sm" href="{{ url_for('doctors') }}">View All Specialists &rarr;</a>
   </div>
@@ -118,7 +220,10 @@
     {% for doc in featured_doctors %}
     <div class="doctor-card">
       <div>
-        <div class="doc-avatar">DR</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="doc-avatar">DR</div>
+          <span class="doc-status-badge"><span class="dot"></span> In Clinic</span>
+        </div>
         <h3 class="doc-name">{{ doc.DoctorName }}</h3>
         <div class="doc-specialty">{{ doc.Specialization }} &bull; {{ doc.DepartmentName }}</div>
         <div class="doc-details">
@@ -144,48 +249,6 @@
   </div>
 </section>
 {% endif %}
-
-<!-- Key Platform Modules / Feature Highlights -->
-<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 24px;">
-  <div class="panel" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
-    <div>
-      <div style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; background:#e0f2fe; color:#0284c7; border-radius:10px; font-size:20px; margin-bottom:12px;">&#128100;</div>
-      <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">Patient Portal</h3>
-      <p style="font-size:14px; color:var(--text-muted); line-height:1.6;">
-        Self-register in seconds, schedule doctor appointments, track digital prescriptions, and securely settle bills online.
-      </p>
-    </div>
-    <div style="margin-top:16px;">
-      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:var(--primary);">Access Patient Tools &rarr;</a>
-    </div>
-  </div>
-
-  <div class="panel" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
-    <div>
-      <div style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; background:#ccfbf1; color:#0d9488; border-radius:10px; font-size:20px; margin-bottom:12px;">&#9877;&#65039;</div>
-      <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">Doctor Console</h3>
-      <p style="font-size:14px; color:var(--text-muted); line-height:1.6;">
-        Review assigned patient appointments in real-time, record clinical diagnoses, and issue verified electronic prescriptions.
-      </p>
-    </div>
-    <div style="margin-top:16px;">
-      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:var(--teal);">Access Doctor Console &rarr;</a>
-    </div>
-  </div>
-
-  <div class="panel" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
-    <div>
-      <div style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; background:#e0e7ff; color:#6366f1; border-radius:10px; font-size:20px; margin-bottom:12px;">&#128202;</div>
-      <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">Executive Administration</h3>
-      <p style="font-size:14px; color:var(--text-muted); line-height:1.6;">
-        Audit clinic revenue collections, monitor doctor caseloads, verify billing receivables, and maintain data integrity.
-      </p>
-    </div>
-    <div style="margin-top:16px;">
-      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:#6366f1;">Admin Workspace &rarr;</a>
-    </div>
-  </div>
-</div>
 
 <!-- Emergency & Support Strip -->
 <div class="panel" style="background: linear-gradient(135deg, #091424, #0f2744); color: #fff; border-color: #1e3a5f; margin-bottom: 0;">

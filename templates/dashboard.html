@@ -2,49 +2,64 @@
 {% block title %}Dashboard | MediCare+ Clinic Management{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <div class="live-indicator" style="margin-bottom:8px;">
-      <span class="pulse-dot"></span>
-      WORKSPACE SESSION &bull; {{ session.get('role')|upper }} CONSOLE
+<!-- Executive Hospital Command Header -->
+<div class="dashboard-command-header">
+  <div class="dash-user-profile">
+    <div class="dash-avatar">
+      {% if session.get('role') == 'doctor' %}DR
+      {% elif session.get('role') == 'patient' %}PT
+      {% else %}AD{% endif %}
     </div>
-    <h1 class="page-title">Welcome back, {{ session.get('doctor_name') or session.get('patient_name') or session.get('username') }}</h1>
-    <p class="page-desc">
-      Connected to <strong style="color:var(--primary); text-transform:uppercase;">{{ session.get('role') }}</strong> workspace. Quick-action metrics and real-time records below.
-    </p>
+    <div>
+      <div class="live-indicator" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.3); color:#38bdf8; margin-bottom:6px;">
+        <span class="pulse-dot"></span>
+        {{ session.get('role')|upper }} COMMAND WORKSPACE
+      </div>
+      <h1 class="dash-greeting-title">Welcome back, {{ session.get('doctor_name') or session.get('patient_name') or session.get('username') }}</h1>
+      <div class="dash-greeting-time">
+        <span>&#128197; <span id="dashLiveDate"></span></span>
+        <span>&bull;</span>
+        <span>&#128337; <span id="dashLiveClock"></span> IST</span>
+        <span>&bull;</span>
+        <span style="color:#34d399; font-weight:700;">● System Online</span>
+      </div>
+    </div>
   </div>
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+
+  <div class="quick-actions-bar">
     {% if session.get('role') == 'patient' %}
       <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book Consultation</a>
-      <a class="btn btn-secondary" href="{{ url_for('bills') }}">My Invoices</a>
+      <a class="btn btn-secondary" href="{{ url_for('bills') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">My Invoices</a>
+      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Pharmacy Rx</a>
     {% elif session.get('role') == 'doctor' %}
-      <a class="btn btn-primary" href="{{ url_for('appointments') }}">My Schedule</a>
-      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}">Issued Rx</a>
+      <a class="btn btn-primary" href="{{ url_for('appointments') }}">My Consultation Schedule</a>
+      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Issued Prescriptions</a>
     {% else %}
-      <a class="btn btn-primary" href="{{ url_for('appointments') }}">Manage All Visits</a>
-      <a class="btn btn-secondary" href="{{ url_for('analytics') }}">Financial Analytics</a>
+      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ New Consultation</a>
+      <a class="btn btn-secondary" href="{{ url_for('patients') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Patient Directory</a>
+      <a class="btn btn-secondary" href="{{ url_for('analytics') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Financial Analytics</a>
     {% endif %}
   </div>
 </div>
 
-<!-- Interactive Clickable KPI Stat Cards (Screenshots 2 & 6 Fix) -->
+<!-- Interactive Clickable KPI Stat Cards -->
 <div class="stats-grid">
   {% if session.get('role') == 'patient' %}
-    <!-- Patient-Specific Clickable Cards -->
+    <!-- Patient-Specific Cards -->
     <a href="{{ url_for('appointments') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view My Appointments">
       <div class="stat-info">
         <span>My Appointments</span>
         <b>{{ stats.appointments }}</b>
-        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">View Consultations &rarr;</small>
+        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">View Consultations &rarr;</small>
       </div>
-      <div class="stat-icon">&#128197;</div>
+      <div class="stat-icon" style="background:#e0f2fe; color:#0284c7;">&#128197;</div>
     </a>
 
     <a href="{{ url_for('prescriptions') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view My Prescriptions">
       <div class="stat-info">
-        <span>My Prescriptions</span>
+        <span>Active Prescriptions</span>
         <b>{{ stats.prescriptions }}</b>
-        <small style="color:var(--teal); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">View Pharmacy Orders &rarr;</small>
+        <small style="color:var(--teal); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">View Medications &rarr;</small>
       </div>
       <div class="stat-icon" style="background:#ccfbf1; color:#0f766e;">&#128138;</div>
     </a>
@@ -53,54 +68,54 @@
       <div class="stat-info">
         <span>Pending Invoices</span>
         <b>{{ stats.pending_bills }}</b>
-        <small style="color:#c2410c; font-size:11.5px; font-weight:600; display:block; margin-top:2px;">Pay Pending Bills &rarr;</small>
+        <small style="color:#c2410c; font-size:11.5px; font-weight:600; display:block; margin-top:3px;">Pay Pending Bills &rarr;</small>
       </div>
       <div class="stat-icon" style="background:#ffedd5; color:#c2410c;">&#128179;</div>
     </a>
 
     <a href="{{ url_for('doctors') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Available Doctors">
       <div class="stat-info">
-        <span>Specialists Available</span>
+        <span>Available Specialists</span>
         <b>{{ stats.doctors }}</b>
-        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">Browse Doctors &rarr;</small>
+        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">Browse Doctors &rarr;</small>
       </div>
-      <div class="stat-icon">&#9877;&#65039;</div>
+      <div class="stat-icon" style="background:#f1f5f9; color:#475569;">&#9877;&#65039;</div>
     </a>
 
   {% else %}
-    <!-- Doctor & Admin Clickable Cards -->
+    <!-- Doctor & Admin Cards -->
     <a href="{{ url_for('patients') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Patient Directory">
       <div class="stat-info">
-        <span>Total Patients</span>
+        <span>Total Registered Patients</span>
         <b>{{ stats.patients }}</b>
-        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">Open Directory &rarr;</small>
+        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">Open Directory &rarr;</small>
       </div>
-      <div class="stat-icon">&#128101;</div>
+      <div class="stat-icon" style="background:#e0f2fe; color:#0284c7;">&#128101;</div>
     </a>
 
     <a href="{{ url_for('doctors') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Doctors">
       <div class="stat-info">
-        <span>Medical Doctors</span>
+        <span>Medical Consultants</span>
         <b>{{ stats.doctors }}</b>
-        <small style="color:var(--teal); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">View Staff &rarr;</small>
+        <small style="color:var(--teal); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">View Staff &rarr;</small>
       </div>
-      <div class="stat-icon">&#9877;&#65039;</div>
+      <div class="stat-icon" style="background:#ccfbf1; color:#0f766e;">&#9877;&#65039;</div>
     </a>
 
     <a href="{{ url_for('appointments') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Appointments">
       <div class="stat-info">
-        <span>Total Appointments</span>
+        <span>Total Consultations</span>
         <b>{{ stats.appointments }}</b>
-        <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:2px;">Open Schedule &rarr;</small>
+        <small style="color:#6366f1; font-size:11.5px; font-weight:600; display:block; margin-top:3px;">Open Schedule &rarr;</small>
       </div>
-      <div class="stat-icon">&#128197;</div>
+      <div class="stat-icon" style="background:#e0e7ff; color:#6366f1;">&#128197;</div>
     </a>
 
     <a href="{{ url_for('bills', status='Pending') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Pending Bills">
       <div class="stat-info">
-        <span>Pending Bills</span>
+        <span>Pending Receivables</span>
         <b>{{ stats.pending_bills }}</b>
-        <small style="color:#c2410c; font-size:11.5px; font-weight:600; display:block; margin-top:2px;">Review Receivables &rarr;</small>
+        <small style="color:#c2410c; font-size:11.5px; font-weight:600; display:block; margin-top:3px;">Review Receivables &rarr;</small>
       </div>
       <div class="stat-icon" style="background:#ffedd5; color:#c2410c;">&#128179;</div>
     </a>
@@ -109,39 +124,55 @@
 
 <!-- Financial Summary for Admin / Doctor -->
 {% if session.get('role') in ('admin', 'doctor') and revenue %}
-<div class="panel" style="background: linear-gradient(135deg, #091424, #0e1e36); color:#fff; border-color:#1a2f4e;">
+<div class="panel" style="background: linear-gradient(135deg, #091424, #0e1e36); color:#fff; border-color:#1a2f4e; margin-bottom:24px;">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
     <div>
-      <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">HOSPITAL CASHFLOW & BILLING AUDIT</span>
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">HOSPITAL CASHFLOW & AUDIT</span>
       <h3 style="color:#fff; font-size:22px; margin-top:4px;">Revenue Overview</h3>
+      <p style="color:#94a3b8; font-size:13px; margin-top:2px;">Real-time consultation fee realizations and outstanding receivables</p>
     </div>
-    <div style="display:flex; gap:28px;">
+    <div style="display:flex; gap:28px; align-items:center;">
       <div>
-        <span style="font-size:12px; color:#94a3b8; display:block;">Collected Revenue</span>
+        <span style="font-size:11.5px; color:#94a3b8; display:block; text-transform:uppercase; letter-spacing:0.5px;">Realized Revenue</span>
         <b style="font-size:24px; color:#34d399;">₹{{ '%.2f'|format(revenue.collected) }}</b>
       </div>
       <div>
-        <span style="font-size:12px; color:#94a3b8; display:block;">Pending Receivables</span>
+        <span style="font-size:11.5px; color:#94a3b8; display:block; text-transform:uppercase; letter-spacing:0.5px;">Pending Dues</span>
         <b style="font-size:24px; color:#fbbf24;">₹{{ '%.2f'|format(revenue.pending) }}</b>
       </div>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('bills') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        Billing Register &rarr;
+      </a>
     </div>
   </div>
 </div>
 {% endif %}
 
-<!-- Recent Appointments Panel -->
+<!-- Recent Consultations Panel -->
 <section class="panel">
   <div class="panel-header">
     <div>
-      <h2 class="panel-title">Recent Consultations</h2>
-      <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Showing your latest appointment records and visit statuses</p>
+      <div class="page-eyebrow">CLINICAL RECORDS</div>
+      <h2 class="panel-title">Recent Consultations & OPD Visits</h2>
+      <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Showing your latest visit records, diagnosis statuses, and billing</p>
     </div>
-    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-      <div style="position:relative;">
-        <input type="text" id="tableSearchInput" class="form-control" style="padding:6px 12px 6px 30px; font-size:13px; width:220px; border-radius:var(--radius-sm);" placeholder="Search consultations...">
-        <span style="position:absolute; left:9px; top:50%; transform:translateY(-50%); opacity:0.5; font-size:12px;">&#128269;</span>
+
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <!-- Interactive Filter Tabs -->
+      <div class="filter-tabs">
+        <button type="button" class="filter-tab-btn active" data-filter="all">All Visits</button>
+        <button type="button" class="filter-tab-btn" data-filter="confirmed">Confirmed</button>
+        <button type="button" class="filter-tab-btn" data-filter="scheduled">Scheduled</button>
+        <button type="button" class="filter-tab-btn" data-filter="completed">Completed</button>
       </div>
-      <a class="btn btn-outline btn-sm" href="{{ url_for('appointments') }}">View All Visits &rarr;</a>
+
+      <!-- Real-time Live Search Input -->
+      <div style="position:relative;">
+        <input type="text" id="tableSearchInput" class="form-control" style="padding:7px 12px 7px 32px; font-size:13px; width:220px; border-radius:var(--radius-sm);" placeholder="Search patient, doctor...">
+        <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.5; font-size:12px;">&#128269;</span>
+      </div>
+
+      <a class="btn btn-outline btn-sm" href="{{ url_for('appointments') }}">Manage All Visits &rarr;</a>
     </div>
   </div>
 
@@ -155,10 +186,10 @@
           {% endif %}
           {% if session.get('role') != 'doctor' %}
             <th>Doctor</th>
-            <th>Department</th>
+            <th>Specialty</th>
           {% endif %}
           <th>Date & Time</th>
-          <th>Reason</th>
+          <th>Consultation Reason</th>
           <th>Status</th>
           <th>Bill Status</th>
           <th>Actions</th>
@@ -166,7 +197,7 @@
       </thead>
       <tbody>
         {% for appt in recent %}
-        <tr>
+        <tr data-status="{{ appt.Status|lower }}">
           <td><strong style="color:var(--primary);">#{{ appt.AppointmentID }}</strong></td>
           {% if session.get('role') != 'patient' %}
             <td>
@@ -187,7 +218,7 @@
           </td>
           <td>
             {% if appt.BillID %}
-              <a href="{{ url_for('invoice', bill_id=appt.BillID) }}" class="badge badge-{{ appt.PaymentStatus|lower }}" title="Click to open invoice" style="text-decoration:none; cursor:pointer;">
+              <a href="{{ url_for('invoice', bill_id=appt.BillID) }}" class="badge badge-{{ appt.PaymentStatus|lower }}" title="Click to view printable official invoice" style="text-decoration:none; cursor:pointer;">
                 {{ appt.PaymentStatus }} (₹{{ '%.2f'|format(appt.TotalAmount or 0) }}) &#8599;
               </a>
             {% else %}
@@ -200,8 +231,8 @@
         </tr>
         {% else %}
         <tr>
-          <td colspan="8" style="text-align:center; padding:32px; color:var(--text-muted);">
-            No recent appointments found.
+          <td colspan="8" style="text-align:center; padding:36px; color:var(--text-muted);">
+            No consultation appointments recorded yet.
           </td>
         </tr>
         {% endfor %}
@@ -209,4 +240,39 @@
     </table>
   </div>
 </section>
+
+<!-- Dashboard Live Clock & Dynamic Filter Script -->
+<script>
+  // 1. Live Indian Standard Time Clock
+  function updateLiveClock() {
+    const now = new Date();
+    const dateEl = document.getElementById('dashLiveDate');
+    const clockEl = document.getElementById('dashLiveClock');
+    if (dateEl) {
+      dateEl.textContent = now.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    if (clockEl) {
+      clockEl.textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    }
+  }
+  updateLiveClock();
+  setInterval(updateLiveClock, 1000);
+
+  // 2. Interactive Status Filter Tabs
+  document.querySelectorAll('.filter-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      const rows = document.querySelectorAll('table.data-table tbody tr[data-status]');
+      rows.forEach(row => {
+        if (filter === 'all' || row.dataset.status === filter) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

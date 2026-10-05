@@ -37,10 +37,10 @@ ENV/
 env.bak/
 venv.bak/
 
-# Local databases and mirrors
+# Local databases and mirrors (clinic_local.db tracked for instant 0-second cloud startup)
 *.db
 *.sqlite3
-clinic_local.db
+!clinic_local.db
 
 # Logs and databases dumps
 *.log

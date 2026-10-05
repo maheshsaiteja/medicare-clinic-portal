@@ -92,13 +92,14 @@ def get_db_config():
         database = os.getenv('DB_NAME', database)
 
     is_aiven = 'aivencloud.com' in host.lower()
-    is_cloud = (
-        is_aiven or 
-        bool(os.getenv('RENDER')) or 
-        os.getenv('FLASK_ENV') == 'production' or 
-        os.getenv('REQUIRE_MYSQL', '').lower() in ('1', 'true', 'yes') or 
-        host not in ('localhost', '127.0.0.1')
-    )
+    has_remote_db = bool(db_uri) or (host not in ('localhost', '127.0.0.1') and host != '')
+    is_render = bool(os.getenv('RENDER'))
+    force_mysql = os.getenv('REQUIRE_MYSQL', '').lower() in ('1', 'true', 'yes')
+    is_cloud = is_aiven or is_render or os.getenv('FLASK_ENV') == 'production' or force_mysql or has_remote_db
+
+    # On Render, if no remote database is configured and MySQL is not forced,
+    # skip attempting localhost:3306 (which doesn't exist on Render) to avoid 15s connection hangs.
+    can_attempt_mysql = has_remote_db or force_mysql or (not is_render)
 
     # 3. Resolve CA certificate
     resolved_ca = resolve_ssl_ca(ssl_ca)
@@ -112,7 +113,10 @@ def get_db_config():
         'ssl_ca': resolved_ca,
         'ssl_mode': ssl_mode,
         'is_aiven': is_aiven,
-        'is_cloud': is_cloud
+        'is_cloud': is_cloud,
+        'has_remote_db': has_remote_db,
+        'is_render': is_render,
+        'can_attempt_mysql': can_attempt_mysql
     }
 
 def resolve_ssl_ca(explicit_ca_path=None):
@@ -153,15 +157,20 @@ def resolve_ssl_ca(explicit_ca_path=None):
 _connection_pool = None
 _pool_lock = None
 
-def get_mysql_connection(database=None, timeout=15):
+def get_mysql_connection(database=None, timeout=3):
     """
     Creates and returns a MySQL connection via connection pooling or direct connect,
     configured with SSL encryption for Aiven and cloud databases.
     Connection pooling eliminates TLS handshake latency on repeated queries.
     """
+    cfg = get_db_config()
+    if not cfg['can_attempt_mysql']:
+        raise ConnectionError(
+            "MySQL connection skipped on cloud deployment (no remote DATABASE_URL configured; using local high-speed mirror)."
+        )
+
     import mysql.connector
 
-    cfg = get_db_config()
     target_db = database if database is not None else cfg['database']
 
     # Use connection pooling for the primary application database

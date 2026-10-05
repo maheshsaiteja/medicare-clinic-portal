@@ -10,15 +10,33 @@
       <p class="page-desc">Enter your clinic username and password to access your workspace.</p>
     </div>
 
-    <form method="post" action="{{ url_for('login') }}">
+    <!-- 1-Click Demo Evaluation Strip -->
+    <div style="margin-bottom: 20px; background: var(--surface-alt); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--border);">
+      <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">
+        ⚡ 1-Click Demo Access (Instant Autofill)
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <button type="button" class="btn btn-outline btn-sm demo-pill-btn" data-role="patient" data-username="patient101" data-password="patient123" style="font-size: 12px; padding: 6px 12px; background: #fff;">
+          👤 Patient Demo
+        </button>
+        <button type="button" class="btn btn-outline btn-sm demo-pill-btn" data-role="doctor" data-username="doctor201" data-password="doctor123" style="font-size: 12px; padding: 6px 12px; background: #fff;">
+          🩺 Doctor Demo
+        </button>
+        <button type="button" class="btn btn-outline btn-sm demo-pill-btn" data-role="admin" data-username="admin" data-password="admin123" style="font-size: 12px; padding: 6px 12px; background: #fff;">
+          ⚡ Admin Demo
+        </button>
+      </div>
+    </div>
+
+    <form method="post" action="{{ url_for('login') }}" id="loginForm">
       <div class="form-group">
         <label class="form-label">Username</label>
-        <input class="form-control" type="text" name="username" required placeholder="Enter your username" autocomplete="username">
+        <input class="form-control" type="text" name="username" id="usernameInput" required placeholder="Enter username (e.g. admin or patient101)" autocomplete="username">
       </div>
 
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
+        <input class="form-control" type="password" name="password" id="passwordInput" required placeholder="Enter password (e.g. admin123 or patient123)" autocomplete="current-password">
       </div>
 
       <button type="submit" class="btn btn-primary btn-block" style="margin-top:14px; font-size:15px; padding:12px;">Sign In &rarr;</button>
