@@ -10,6 +10,8 @@
   </div>
   {% if session.get('role') == 'patient' %}
     <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Schedule Consultation</a>
+  {% elif session.get('role') == 'admin' %}
+    <a class="btn btn-primary" href="{{ url_for('dashboard') }}#doctorsSection" onclick="openAddDoctorModal(); return false;">+ Add New Doctor</a>
   {% endif %}
 </div>
 

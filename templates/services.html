@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Clinical Services & OPD | MediCare+ Clinic Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">HEALTHCARE CAPABILITIES</div>
+    <h1 class="page-title">Comprehensive Clinical Services &amp; OPD</h1>
+    <p class="page-desc">Advanced outpatient care, certified electronic prescriptions, digital diagnostics, and transparent billing.</p>
+  </div>
+  <div>
+    <a class="btn btn-primary" href="{{ url_for('new_appointment') if session.get('role') == 'patient' else url_for('login') }}">
+      + Book Doctor Consultation
+    </a>
+  </div>
+</div>
+
+<!-- Services Grid -->
+<div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom:32px;">
+  <!-- Service 1 -->
+  <div class="doctor-card">
+    <div style="width:48px; height:48px; border-radius:14px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px;">
+      &#9877;&#65039;
+    </div>
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">Specialist OPD Consultations</h3>
+    <p style="font-size:13.5px; color:var(--text-muted); line-height:1.6;">
+      Direct consultation with senior physicians in Cardiology, Dermatology, Pediatrics, and Internal Medicine with scheduled time slots and zero waiting queues.
+    </p>
+    <div style="margin-top:16px;">
+      <a href="{{ url_for('doctors') }}" style="font-size:13px; font-weight:700; color:var(--primary);">Explore Specialists &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Service 2 -->
+  <div class="doctor-card">
+    <div style="width:48px; height:48px; border-radius:14px; background:#ccfbf1; color:#0d9488; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px;">
+      &#128138;
+    </div>
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">Verified Digital E-Prescriptions</h3>
+    <p style="font-size:13.5px; color:var(--text-muted); line-height:1.6;">
+      Doctors generate electronic prescriptions with exact dosage, frequency, course duration, and clinical instructions directly stored in the patient's portal.
+    </p>
+    <div style="margin-top:16px;">
+      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:var(--teal);">Access Pharmacy Portal &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Service 3 -->
+  <div class="doctor-card">
+    <div style="width:48px; height:48px; border-radius:14px; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px;">
+      &#128179;
+    </div>
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">Paperless GST Billing &amp; Receipts</h3>
+    <p style="font-size:13.5px; color:var(--text-muted); line-height:1.6;">
+      Automated billing trigger generates transparent, itemized invoices with 5% GST calculation. Multi-channel settlement supported: UPI, Card, Cash, &amp; Insurance.
+    </p>
+    <div style="margin-top:16px;">
+      <a href="{{ url_for('login') }}" style="font-size:13px; font-weight:700; color:#d97706;">View Billing System &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Service 4 -->
+  <div class="doctor-card">
+    <div style="width:48px; height:48px; border-radius:14px; background:#ffe4e6; color:#e11d48; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px;">
+      &#128657;
+    </div>
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--text-title);">24/7 Emergency Medical Triage</h3>
+    <p style="font-size:13.5px; color:var(--text-muted); line-height:1.6;">
+      Dedicated 24/7 medical response helpline and immediate OPD triage for urgent health concerns, acute allergic reactions, and cardiac consultations.
+    </p>
+    <div style="margin-top:16px;">
+      <a href="{{ url_for('emergency') }}" style="font-size:13px; font-weight:700; color:#e11d48;">Emergency Desk Info &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<!-- Clinical Workflow Steps -->
+<div class="panel" style="background:#fff; border-color:var(--border);">
+  <div style="text-align:center; max-width:600px; margin:0 auto 28px auto;">
+    <div class="page-eyebrow">SEAMLESS CLINICAL EXPERIENCE</div>
+    <h2 style="font-size:24px; color:var(--navy-dark); font-weight:800;">How Your OPD Visit Works</h2>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px;">
+    <div style="background:var(--surface-alt); padding:20px; border-radius:var(--radius-md); text-align:center;">
+      <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; margin:0 auto 10px auto;">1</div>
+      <h4 style="font-size:16px; margin-bottom:4px;">Sign Up &amp; Choose Doctor</h4>
+      <p style="font-size:12.5px; color:var(--text-muted);">Pick doctor by specialty and consultation schedule.</p>
+    </div>
+    <div style="background:var(--surface-alt); padding:20px; border-radius:var(--radius-md); text-align:center;">
+      <div style="width:36px; height:36px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; margin:0 auto 10px auto;">2</div>
+      <h4 style="font-size:16px; margin-bottom:4px;">Consult Specialist</h4>
+      <p style="font-size:12.5px; color:var(--text-muted);">Clinical diagnosis recorded securely in system.</p>
+    </div>
+    <div style="background:var(--surface-alt); padding:20px; border-radius:var(--radius-md); text-align:center;">
+      <div style="width:36px; height:36px; border-radius:50%; background:#6366f1; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; margin:0 auto 10px auto;">3</div>
+      <h4 style="font-size:16px; margin-bottom:4px;">Digital Prescription</h4>
+      <p style="font-size:12.5px; color:var(--text-muted);">Verified medication details available 24/7 online.</p>
+    </div>
+    <div style="background:var(--surface-alt); padding:20px; border-radius:var(--radius-md); text-align:center;">
+      <div style="width:36px; height:36px; border-radius:50%; background:#059669; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; margin:0 auto 10px auto;">4</div>
+      <h4 style="font-size:16px; margin-bottom:4px;">Instant GST Invoice</h4>
+      <p style="font-size:12.5px; color:var(--text-muted);">Paperless checkout with instant payment receipt.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Clinical Departments | MediCare+ Clinic Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">SPECIALIZED MEDICAL CARE</div>
+    <h1 class="page-title">Clinical Departments &amp; Specialties</h1>
+    <p class="page-desc">Comprehensive outpatient care led by board-certified clinical department heads and multidisciplinary specialists.</p>
+  </div>
+  <div>
+    {% if session.get('role') == 'patient' %}
+      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book Consultation</a>
+    {% else %}
+      <a class="btn btn-primary" href="{{ url_for('login') }}">+ Book Consultation</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+  {% for dept in departments %}
+  <div class="doctor-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:22px;">
+          {% if dept.DepartmentName == 'Cardiology' %}&#129505;
+          {% elif dept.DepartmentName == 'General Medicine' %}&#129658;
+          {% elif dept.DepartmentName == 'Dermatology' %}&#129656;
+          {% elif dept.DepartmentName == 'Pediatrics' %}&#128118;
+          {% else %}&#127973;{% endif %}
+        </div>
+        <span class="badge" style="background:#e0f2fe; color:#0284c7; font-weight:700;">
+          {{ dept.DoctorCount or 1 }} Specialist{{ 's' if (dept.DoctorCount or 1) != 1 else '' }}
+        </span>
+      </div>
+
+      <h3 class="doc-name" style="font-size:20px; margin-bottom:4px;">{{ dept.DepartmentName }}</h3>
+      <p style="font-size:13.5px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+        {{ dept.Description }}
+      </p>
+
+      <div class="doc-details" style="background:var(--surface-alt); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+        <div style="font-size:12.5px;">
+          <strong style="color:var(--text-title);">Head of Department:</strong>
+          <span style="color:var(--primary); font-weight:600;"> {{ dept.HeadOfDepartment }}</span>
+        </div>
+        <div style="font-size:12.5px; margin-top:4px;">
+          <strong style="color:var(--text-title);">Clinic Hours:</strong>
+          <span> 8:00 AM &ndash; 8:00 PM Daily</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:20px; padding-top:14px; border-top:1px solid var(--border-subtle);">
+      <a class="btn btn-outline btn-sm" href="{{ url_for('doctors', dept=dept.DepartmentName) }}" style="flex:1; text-align:center;">
+        Meet Specialists
+      </a>
+      {% if session.get('role') == 'patient' %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('new_appointment') }}" style="flex:1; text-align:center;">
+          Book OPD &rarr;
+        </a>
+      {% else %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('login') }}" style="flex:1; text-align:center;">
+          Schedule &rarr;
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -61,3 +61,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 6000);
   });
 });
+
+// 4. Global Modal Handlers for Doctor Onboarding
+window.openAddDoctorModal = function() {
+  const modal = document.getElementById('addDoctorModal');
+  if (modal) {
+    modal.classList.add('active');
+  } else {
+    window.location.href = '/dashboard#addDoctorModal';
+  }
+};
+
+window.closeAddDoctorModal = function() {
+  const modal = document.getElementById('addDoctorModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+};
+

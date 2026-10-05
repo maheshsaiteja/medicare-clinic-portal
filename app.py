@@ -408,11 +408,25 @@ def dashboard():
         """, one=True)
         revenue_stats = rev or {'collected': 0, 'pending': 0}
 
+    admin_doctors = []
+    departments_list = []
+    if role == 'admin':
+        admin_doctors = query_db("""
+            SELECT d.*, dep.DepartmentName, u.username
+            FROM doctor d
+            JOIN department dep ON d.DepartmentID = dep.DepartmentID
+            LEFT JOIN users u ON d.UserID = u.user_id
+            ORDER BY d.DoctorID
+        """)
+        departments_list = query_db("SELECT * FROM department ORDER BY DepartmentName")
+
     return render_template(
         'dashboard.html',
         stats=stats,
         recent=recent_appointments,
-        revenue=revenue_stats
+        revenue=revenue_stats,
+        doctors=admin_doctors,
+        departments=departments_list
     )
 
 # -----------------------------------------------------------------------------
@@ -474,6 +488,107 @@ def doctors():
         """)
 
     return render_template('doctors.html', doctors=doc_rows, departments=departments, selected_dept=dept_filter)
+
+# -----------------------------------------------------------------------------
+# ADD NEW DOCTOR (Admin Capability)
+# -----------------------------------------------------------------------------
+@app.route('/doctors/add', methods=['GET', 'POST'])
+@login_required('admin')
+def add_doctor():
+    departments = query_db("SELECT * FROM department ORDER BY DepartmentName")
+
+    if request.method == 'POST':
+        name = request.form.get('doctor_name', '').strip()
+        dept_id = request.form.get('department_id')
+        specialization = request.form.get('specialization', '').strip()
+        qualifications = request.form.get('qualifications', 'MBBS, MD').strip()
+        fee = request.form.get('consultation_fee', '500').strip()
+        room = request.form.get('room_number', 'Cabin 101').strip()
+        available_days = request.form.get('available_days', 'Mon - Sat').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+
+        if not all([name, dept_id, specialization, phone, username, password]):
+            flash('Please complete all required fields (Name, Department, Specialization, Phone, Username, Password).', 'warning')
+            return redirect(url_for('dashboard') + '#doctorsSection')
+
+        try:
+            fee_val = float(fee) if fee else 500.00
+        except ValueError:
+            fee_val = 500.00
+
+        try:
+            # Check unique username
+            existing = query_db("SELECT user_id FROM users WHERE username = %s", (username,), one=True)
+            if existing:
+                flash(f'Username "{username}" is already taken. Please choose another username.', 'danger')
+                return redirect(url_for('dashboard') + '#doctorsSection')
+
+            # Check unique phone
+            existing_phone = query_db("SELECT DoctorID FROM doctor WHERE Phone = %s", (phone,), one=True)
+            if existing_phone:
+                flash(f'Phone number "{phone}" is already associated with another doctor.', 'danger')
+                return redirect(url_for('dashboard') + '#doctorsSection')
+
+            # Create User record with role='doctor'
+            hashed_pwd = generate_password_hash(password)
+            user_id = query_db(
+                "INSERT INTO users (username, password, role) VALUES (%s, %s, 'doctor')",
+                (username, hashed_pwd),
+                commit=True
+            )
+
+            # Create Doctor record
+            query_db(
+                """INSERT INTO doctor (DoctorName, Specialization, Qualifications, Phone, Email, 
+                                       DepartmentID, ConsultationFee, RoomNumber, AvailableDays, UserID)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (name, specialization, qualifications, phone, email or None,
+                 dept_id, fee_val, room, available_days, user_id),
+                commit=True
+            )
+
+            flash(f'Dr. {name} has been successfully added to the hospital staff! Login: {username}', 'success')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            flash(f'Failed to add doctor: {str(e)}', 'danger')
+            return redirect(url_for('dashboard'))
+
+    return redirect(url_for('dashboard') + '#doctorsSection')
+
+
+# -----------------------------------------------------------------------------
+# CLINICAL DEPARTMENTS
+# -----------------------------------------------------------------------------
+@app.route('/departments')
+def departments():
+    try:
+        dept_rows = query_db("""
+            SELECT dep.*, COUNT(d.DoctorID) AS DoctorCount
+            FROM department dep
+            LEFT JOIN doctor d ON dep.DepartmentID = d.DepartmentID
+            GROUP BY dep.DepartmentID, dep.DepartmentName, dep.Description, dep.HeadOfDepartment
+            ORDER BY dep.DepartmentID
+        """)
+    except Exception:
+        dept_rows = []
+    return render_template('departments.html', departments=dept_rows)
+
+# -----------------------------------------------------------------------------
+# CLINICAL SERVICES & OPD
+# -----------------------------------------------------------------------------
+@app.route('/services')
+def services():
+    return render_template('services.html')
+
+# -----------------------------------------------------------------------------
+# 24/7 EMERGENCY & TRIAGE
+# -----------------------------------------------------------------------------
+@app.route('/emergency')
+def emergency():
+    return render_template('emergency.html')
 
 # -----------------------------------------------------------------------------
 # APPOINTMENTS

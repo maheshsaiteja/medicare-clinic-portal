@@ -15,7 +15,13 @@
         <span class="pulse-dot"></span>
         {{ session.get('role')|upper }} COMMAND WORKSPACE
       </div>
-      <h1 class="dash-greeting-title">Welcome back, {{ session.get('doctor_name') or session.get('patient_name') or session.get('username') }}</h1>
+      <h1 class="dash-greeting-title">
+        {% if session.get('role') == 'admin' %}
+          Clinic Administration Console
+        {% else %}
+          Welcome back, {{ session.get('doctor_name') or session.get('patient_name') or session.get('username') }}
+        {% endif %}
+      </h1>
       <div class="dash-greeting-time">
         <span>&#128197; <span id="dashLiveDate"></span></span>
         <span>&bull;</span>
@@ -27,17 +33,32 @@
   </div>
 
   <div class="quick-actions-bar">
-    {% if session.get('role') == 'patient' %}
-      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book Consultation</a>
-      <a class="btn btn-secondary" href="{{ url_for('bills') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">My Invoices</a>
-      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Pharmacy Rx</a>
+    {% if session.get('role') == 'admin' %}
+      <button type="button" class="btn btn-primary" onclick="openAddDoctorModal()" style="display:inline-flex; align-items:center; gap:6px;">
+        + Add New Doctor
+      </button>
+      <a class="btn btn-secondary" href="{{ url_for('patients') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        Patient Directory
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('analytics') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        Financial Analytics
+      </a>
     {% elif session.get('role') == 'doctor' %}
-      <a class="btn btn-primary" href="{{ url_for('appointments') }}">My Consultation Schedule</a>
-      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Issued Prescriptions</a>
+      <a class="btn btn-primary" href="{{ url_for('appointments') }}">My OPD Schedule</a>
+      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        Issued Prescriptions
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('patients') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        Patient Records
+      </a>
     {% else %}
-      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ New Consultation</a>
-      <a class="btn btn-secondary" href="{{ url_for('patients') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Patient Directory</a>
-      <a class="btn btn-secondary" href="{{ url_for('analytics') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Financial Analytics</a>
+      <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book Consultation</a>
+      <a class="btn btn-secondary" href="{{ url_for('bills') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        My Invoices
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('prescriptions') }}" style="background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">
+        Pharmacy Rx
+      </a>
     {% endif %}
   </div>
 </div>
@@ -84,22 +105,24 @@
 
   {% else %}
     <!-- Doctor & Admin Cards -->
+    <a href="{{ url_for('doctors') if session.get('role') == 'admin' else url_for('patients') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Staff">
+      <div class="stat-info">
+        <span>Medical Doctors</span>
+        <b>{{ stats.doctors }}</b>
+        <small style="color:var(--teal); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">
+          {% if session.get('role') == 'admin' %}+ Add / Manage Doctors &rarr;{% else %}View Colleagues &rarr;{% endif %}
+        </small>
+      </div>
+      <div class="stat-icon" style="background:#ccfbf1; color:#0f766e;">&#9877;&#65039;</div>
+    </a>
+
     <a href="{{ url_for('patients') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Patient Directory">
       <div class="stat-info">
-        <span>Total Registered Patients</span>
+        <span>Registered Patients</span>
         <b>{{ stats.patients }}</b>
         <small style="color:var(--primary); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">Open Directory &rarr;</small>
       </div>
       <div class="stat-icon" style="background:#e0f2fe; color:#0284c7;">&#128101;</div>
-    </a>
-
-    <a href="{{ url_for('doctors') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Doctors">
-      <div class="stat-info">
-        <span>Medical Consultants</span>
-        <b>{{ stats.doctors }}</b>
-        <small style="color:var(--teal); font-size:11.5px; font-weight:600; display:block; margin-top:3px;">View Staff &rarr;</small>
-      </div>
-      <div class="stat-icon" style="background:#ccfbf1; color:#0f766e;">&#9877;&#65039;</div>
     </a>
 
     <a href="{{ url_for('appointments') }}" class="stat-card" style="text-decoration:none; cursor:pointer;" title="Click to view Appointments">
@@ -128,8 +151,8 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
     <div>
       <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#38bdf8; font-weight:700;">HOSPITAL CASHFLOW & AUDIT</span>
-      <h3 style="color:#fff; font-size:22px; margin-top:4px;">Revenue Overview</h3>
-      <p style="color:#94a3b8; font-size:13px; margin-top:2px;">Real-time consultation fee realizations and outstanding receivables</p>
+      <h3 style="color:#fff; font-size:22px; margin-top:4px;">Revenue & Receivables Overview</h3>
+      <p style="color:#94a3b8; font-size:13px; margin-top:2px;">Realized consultation collections and outstanding receivables across departments</p>
     </div>
     <div style="display:flex; gap:28px; align-items:center;">
       <div>
@@ -148,12 +171,70 @@
 </div>
 {% endif %}
 
-<!-- Recent Consultations Panel -->
+<!-- Admin-Only Doctor Staff Management Roster -->
+{% if session.get('role') == 'admin' and doctors %}
+<section class="panel" id="doctorsSection" style="margin-bottom: 24px;">
+  <div class="panel-header">
+    <div>
+      <div class="page-eyebrow">HOSPITAL STAFF MANAGEMENT</div>
+      <h2 class="panel-title">Medical Staff & Doctor Roster</h2>
+      <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+        Manage certified physicians, department assignments, room locations, and consultation fees.
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddDoctorModal()" style="display:inline-flex; align-items:center; gap:6px;">
+      + Add New Doctor
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Doctor Name</th>
+          <th>Department</th>
+          <th>Specialization &amp; Degrees</th>
+          <th>Fee (₹)</th>
+          <th>Room / Cabin</th>
+          <th>Schedule</th>
+          <th>Phone</th>
+          <th>Portal Login</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in doctors %}
+        <tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:32px; height:32px; border-radius:8px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px;">DR</div>
+              <strong>{{ doc.DoctorName }}</strong>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#e0f2fe; color:#0284c7;">{{ doc.DepartmentName }}</span></td>
+          <td>{{ doc.Specialization }} <small style="color:var(--text-muted);">({{ doc.Qualifications }})</small></td>
+          <td><strong style="color:var(--text-title);">₹{{ '%.2f'|format(doc.ConsultationFee) }}</strong></td>
+          <td>{{ doc.RoomNumber }}</td>
+          <td><small>{{ doc.AvailableDays }}</small></td>
+          <td>{{ doc.Phone }}</td>
+          <td>
+            <span class="badge" style="background:#f1f5f9; color:var(--text-body); font-family:monospace;">
+              {{ doc.username or 'doctor' + doc.DoctorID|string }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<!-- Consultations Panel -->
 <section class="panel">
   <div class="panel-header">
     <div>
-      <div class="page-eyebrow">CLINICAL RECORDS</div>
-      <h2 class="panel-title">Recent Consultations & OPD Visits</h2>
+      <div class="page-eyebrow">CLINICAL SCHEDULE</div>
+      <h2 class="panel-title">Recent Consultations &amp; OPD Visits</h2>
       <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Showing your latest visit records, diagnosis statuses, and billing</p>
     </div>
 
@@ -188,7 +269,7 @@
             <th>Doctor</th>
             <th>Specialty</th>
           {% endif %}
-          <th>Date & Time</th>
+          <th>Date &amp; Time</th>
           <th>Consultation Reason</th>
           <th>Status</th>
           <th>Bill Status</th>
@@ -241,7 +322,90 @@
   </div>
 </section>
 
-<!-- Dashboard Live Clock & Dynamic Filter Script -->
+<!-- Add Doctor Modal (Admin Only) -->
+{% if session.get('role') == 'admin' %}
+<div class="modal-overlay" id="addDoctorModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="page-eyebrow">HOSPITAL ONBOARDING</div>
+        <h3 style="font-size:20px; font-weight:800; color:var(--navy-dark); margin-top:2px;">Add New Doctor to Staff</h3>
+      </div>
+      <button type="button" onclick="closeAddDoctorModal()" style="border:none; background:none; font-size:24px; cursor:pointer; color:var(--text-muted); line-height:1;">&times;</button>
+    </div>
+
+    <form method="post" action="{{ url_for('add_doctor') }}">
+      <div class="modal-body" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="form-group" style="grid-column:1 / -1;">
+          <label class="form-label">Doctor Full Name *</label>
+          <input type="text" name="doctor_name" class="form-control" placeholder="e.g. Dr. Ramesh Chander" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Department *</label>
+          <select name="department_id" class="form-control" required>
+            {% for dep in departments %}
+              <option value="{{ dep.DepartmentID }}">{{ dep.DepartmentName }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Specialization *</label>
+          <input type="text" name="specialization" class="form-control" placeholder="e.g. Senior Cardiologist" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Qualifications</label>
+          <input type="text" name="qualifications" class="form-control" placeholder="e.g. MBBS, MD, DM" value="MBBS, MD">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Consultation Fee (₹) *</label>
+          <input type="number" step="50" name="consultation_fee" class="form-control" value="600" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Cabin / Room Number</label>
+          <input type="text" name="room_number" class="form-control" placeholder="e.g. Cabin 204" value="Cabin 204">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Available Days / Timings</label>
+          <input type="text" name="available_days" class="form-control" placeholder="e.g. Mon - Sat, 9 AM - 2 PM" value="Mon - Sat, 9 AM - 2 PM">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number *</label>
+          <input type="tel" name="phone" class="form-control" placeholder="e.g. 9000000005" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" class="form-control" placeholder="e.g. dr.ramesh@clinic.org">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Doctor Portal Username *</label>
+          <input type="text" name="username" class="form-control" placeholder="e.g. doctor205" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Portal Password *</label>
+          <input type="password" name="password" class="form-control" placeholder="e.g. doctor123" required>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeAddDoctorModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">+ Onboard Doctor &rarr;</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Dashboard Live Clock, Filter Tabs & Modal Script -->
 <script>
   // 1. Live Indian Standard Time Clock
   function updateLiveClock() {
@@ -273,6 +437,28 @@
         }
       });
     });
+  });
+
+  // 3. Add Doctor Modal Handlers
+  function openAddDoctorModal() {
+    const modal = document.getElementById('addDoctorModal');
+    if (modal) {
+      modal.classList.add('active');
+    }
+  }
+
+  function closeAddDoctorModal() {
+    const modal = document.getElementById('addDoctorModal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  }
+
+  window.addEventListener('click', (e) => {
+    const modal = document.getElementById('addDoctorModal');
+    if (modal && e.target === modal) {
+      closeAddDoctorModal();
+    }
   });
 </script>
 {% endblock %}
