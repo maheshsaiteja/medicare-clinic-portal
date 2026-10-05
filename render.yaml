@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: medicare-clinic-system
+    name: medicare-clinic-portal
     runtime: python
     plan: free
     region: oregon
