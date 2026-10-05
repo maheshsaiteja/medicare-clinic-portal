@@ -150,25 +150,76 @@ def resolve_ssl_ca(explicit_ca_path=None):
 
     return None
 
+_connection_pool = None
+_pool_lock = None
+
 def get_mysql_connection(database=None, timeout=15):
     """
-    Creates and returns a live MySQL connection via mysql-connector-python
+    Creates and returns a MySQL connection via connection pooling or direct connect,
     configured with SSL encryption for Aiven and cloud databases.
+    Connection pooling eliminates TLS handshake latency on repeated queries.
     """
     import mysql.connector
 
     cfg = get_db_config()
     target_db = database if database is not None else cfg['database']
 
+    # Use connection pooling for the primary application database
+    is_primary_db = (database is None or database == cfg['database'])
+    if is_primary_db:
+        global _connection_pool, _pool_lock
+        if _pool_lock is None:
+            import threading
+            _pool_lock = threading.Lock()
+
+        if _connection_pool is None:
+            with _pool_lock:
+                if _connection_pool is None:
+                    try:
+                        from mysql.connector import pooling
+                        pool_kwargs = {
+                            'host': cfg['host'],
+                            'port': cfg['port'],
+                            'user': cfg['user'],
+                            'password': cfg['password'],
+                            'database': cfg['database'],
+                            'ssl_disabled': False,
+                            'connection_timeout': timeout,
+                            'charset': 'utf8mb4',
+                            'use_pure': True
+                        }
+                        if cfg['ssl_ca']:
+                            pool_kwargs['ssl_ca'] = cfg['ssl_ca']
+                            pool_kwargs['ssl_verify_cert'] = True
+                        else:
+                            pool_kwargs['ssl_verify_cert'] = False
+                            pool_kwargs['ssl_verify_identity'] = False
+
+                        _connection_pool = pooling.MySQLConnectionPool(
+                            pool_name="medicare_pool",
+                            pool_size=5,
+                            pool_reset_session=True,
+                            **pool_kwargs
+                        )
+                    except Exception as pool_err:
+                        _connection_pool = None
+
+        if _connection_pool is not None:
+            try:
+                return _connection_pool.get_connection()
+            except Exception:
+                pass
+
+    # Direct connection fallback
     kwargs = {
         'host': cfg['host'],
         'port': cfg['port'],
         'user': cfg['user'],
         'password': cfg['password'],
-        'ssl_disabled': False,              # Enforce SSL/TLS encryption for Aiven
+        'ssl_disabled': False,
         'connection_timeout': timeout,
         'charset': 'utf8mb4',
-        'use_pure': True                     # Reliable pure-Python socket with full TLS support
+        'use_pure': True
     }
 
     if target_db:
@@ -178,8 +229,6 @@ def get_mysql_connection(database=None, timeout=15):
         kwargs['ssl_ca'] = cfg['ssl_ca']
         kwargs['ssl_verify_cert'] = True
     else:
-        # Aiven requires SSL in transit. If no custom CA file is specified,
-        # encrypt traffic without rejecting on local root CA absence.
         kwargs['ssl_verify_cert'] = False
         kwargs['ssl_verify_identity'] = False
 

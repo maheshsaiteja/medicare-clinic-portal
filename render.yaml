@@ -4,8 +4,9 @@ services:
     runtime: python
     plan: free
     region: oregon
-    buildCommand: pip install -r requirements.txt
-    startCommand: python init_db.py && gunicorn app:app
+    buildCommand: pip install -r requirements.txt && python init_db.py || true
+    startCommand: gunicorn app:app --workers 2 --threads 4 --timeout 60
+    healthCheckPath: /healthz
     autoDeploy: true
     envVars:
       - key: SECRET_KEY

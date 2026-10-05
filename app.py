@@ -156,6 +156,26 @@ def verify_user_password(stored_password, provided_password):
     return stored_password == provided_password
 
 # -----------------------------------------------------------------------------
+# HEALTH CHECK & KEEP-ALIVE (Render 0-Second Cold-Start Prevention)
+# -----------------------------------------------------------------------------
+@app.route('/healthz')
+@app.route('/ping')
+def healthz():
+    """Ultra-fast, zero-overhead endpoint for Render health checks & 24/7 keep-alive."""
+    return jsonify({
+        "status": "healthy",
+        "service": "medicare-clinic-system",
+        "timestamp": datetime.utcnow().isoformat()
+    }), 200
+
+@app.after_request
+def add_cache_headers(response):
+    """Cache static assets (CSS, JS, fonts, images) for 24 hours to maximize client speed."""
+    if request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
+
+# -----------------------------------------------------------------------------
 # PUBLIC ROUTES
 # -----------------------------------------------------------------------------
 @app.route('/')
@@ -168,11 +188,19 @@ def index():
             JOIN department dep ON d.DepartmentID = dep.DepartmentID
             ORDER BY d.DoctorID LIMIT 4
         """)
+        # Single combined query instead of 4 separate database roundtrips
+        stats_row = query_db("""
+            SELECT 
+                (SELECT COUNT(*) FROM patient) AS patients,
+                (SELECT COUNT(*) FROM doctor) AS doctors,
+                (SELECT COUNT(*) FROM appointment) AS appointments,
+                (SELECT COUNT(*) FROM department) AS departments
+        """, one=True)
         stats = {
-            'patients': query_db("SELECT COUNT(*) AS c FROM patient", one=True)['c'],
-            'doctors': query_db("SELECT COUNT(*) AS c FROM doctor", one=True)['c'],
-            'appointments': query_db("SELECT COUNT(*) AS c FROM appointment", one=True)['c'],
-            'departments': query_db("SELECT COUNT(*) AS c FROM department", one=True)['c']
+            'patients': stats_row['patients'] if stats_row and stats_row.get('patients') is not None else 5,
+            'doctors': stats_row['doctors'] if stats_row and stats_row.get('doctors') is not None else 4,
+            'appointments': stats_row['appointments'] if stats_row and stats_row.get('appointments') is not None else 6,
+            'departments': stats_row['departments'] if stats_row and stats_row.get('departments') is not None else 4
         }
     except Exception:
         doctors = []
@@ -796,6 +824,46 @@ def system_status():
     cfg = db_config.get_db_config()
     active_engine = db_config.get_display_engine_name() if is_mysql_connected() else 'Local SQLite Mirror'
     return render_template('system_status.html', counts=counts, db_engine=active_engine, db_config=cfg)
+
+# -----------------------------------------------------------------------------
+# AUTOMATIC SELF-KEEP-ALIVE DAEMON (Runs continuously on Render)
+# -----------------------------------------------------------------------------
+def init_keep_alive():
+    """
+    If RENDER_EXTERNAL_URL or APP_PING_URL is detected, runs a background
+    daemon thread that pings the web service every 10 minutes to reset
+    Render's 15-minute inactivity timer, eliminating cold-start delays.
+    """
+    ping_url = os.getenv('APP_PING_URL') or os.getenv('RENDER_EXTERNAL_URL')
+    if not ping_url:
+        return
+
+    import threading
+    import time
+    import urllib.request
+
+    clean_url = ping_url if ping_url.startswith(('http://', 'https://')) else f"https://{ping_url}"
+    target = f"{clean_url.rstrip('/')}/healthz"
+
+    def _pinger():
+        time.sleep(30)  # Wait 30s for web service to finish initial boot
+        print(f"[*] Keep-Alive Daemon active: pinging {target} every 10m to prevent Render sleep.")
+        while True:
+            try:
+                req = urllib.request.Request(
+                    target,
+                    headers={'User-Agent': 'MediCareKeepAliveDaemon/1.0'}
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    pass
+            except Exception:
+                pass
+            time.sleep(600)  # Ping every 10 minutes
+
+    t = threading.Thread(target=_pinger, daemon=True, name="RenderKeepAliveThread")
+    t.start()
+
+init_keep_alive()
 
 if __name__ == '__main__':
     cfg = db_config.get_db_config()

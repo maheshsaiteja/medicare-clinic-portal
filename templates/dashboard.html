@@ -4,13 +4,16 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <div class="page-eyebrow">CLINIC CONTROL CENTER</div>
+    <div class="live-indicator" style="margin-bottom:8px;">
+      <span class="pulse-dot"></span>
+      WORKSPACE SESSION &bull; {{ session.get('role')|upper }} CONSOLE
+    </div>
     <h1 class="page-title">Welcome back, {{ session.get('doctor_name') or session.get('patient_name') or session.get('username') }}</h1>
     <p class="page-desc">
-      You are logged in as <strong style="color:var(--primary); text-transform:uppercase;">{{ session.get('role') }}</strong>. Click any metric card below to open its records.
+      Connected to <strong style="color:var(--primary); text-transform:uppercase;">{{ session.get('role') }}</strong> workspace. Quick-action metrics and real-time records below.
     </p>
   </div>
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
     {% if session.get('role') == 'patient' %}
       <a class="btn btn-primary" href="{{ url_for('new_appointment') }}">+ Book Consultation</a>
       <a class="btn btn-secondary" href="{{ url_for('bills') }}">My Invoices</a>
@@ -133,7 +136,13 @@
       <h2 class="panel-title">Recent Consultations</h2>
       <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">Showing your latest appointment records and visit statuses</p>
     </div>
-    <a class="btn btn-outline btn-sm" href="{{ url_for('appointments') }}">View All Visits &rarr;</a>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="position:relative;">
+        <input type="text" id="tableSearchInput" class="form-control" style="padding:6px 12px 6px 30px; font-size:13px; width:220px; border-radius:var(--radius-sm);" placeholder="Search consultations...">
+        <span style="position:absolute; left:9px; top:50%; transform:translateY(-50%); opacity:0.5; font-size:12px;">&#128269;</span>
+      </div>
+      <a class="btn btn-outline btn-sm" href="{{ url_for('appointments') }}">View All Visits &rarr;</a>
+    </div>
   </div>
 
   <div class="table-responsive">
